@@ -1,0 +1,84 @@
+###########################
+#KAISER ESTIMATION IN R
+###########################
+
+#From github.com/FlorianScharf/PCA_Tutorial
+
+if(!require(MASS)) install.packages("MASS")
+if(!require(R.matlab)) install.packages("R.matlab")
+if(!require(psych)) install.packages("psych")
+if(!require(psych)) install.packages("EFAtools")
+
+library(MASS)
+library(psych)
+library(R.matlab)
+library(EFAtools)
+
+rm(list=ls()) #empty workspace
+filename <- "Z:/Bureau/data_analysis/data/dataforR.mat"
+
+dataforR <- readMat(filename)
+
+colnames(dataforR$dataR) = paste0("erp_", 1:1000)
+colnames(dataforR$dataidxR) = c("group", "cond", "topo", "subj")
+
+erpdata = data.frame(cbind(dataforR$dataidxR, dataforR$dataR))
+erpdata$group = factor(erpdata$group, labels = c("typical", "atypical"))
+erpdata$cond = factor(erpdata$cond, labels = c("typical"))
+erpdata$topo = factor(erpdata$topo, labels = c("som", "ftl"))
+erpdata$subj = factor(erpdata$subj)
+
+fs = 1000 # sampling rate
+xmin = -0.1 # baseline
+pnts = 1000 # epoch duration
+lat = (1:pnts - 1) / fs + xmin
+
+write.csv(erpdata, file = "Z:/Bureau/data_analysis/data/erpdata.csv")
+save(erpdata, fs, xmin, pnts, lat, file = "Z:/Bureau/data_analysis/data/erpdata.Rdata")
+
+group = "typical"
+
+NDD_group_data = as.matrix(erpdata[erpdata$group == group, -c(1:4)])
+
+R = cor(NDD_group_data)
+
+##EKC
+
+EKC <- function (R, N = NA, use = c("pairwise.complete.obs", "all.obs", 
+                             "complete.obs", "everything", "na.or.complete"), cor_method = c("pearson", 
+                                                                                             "spearman", "kendall")) 
+{
+
+  p <- ncol(R)
+  lambda <- eigen(R, symmetric = TRUE, only.values = TRUE)$values
+  refs <- vector("double", p)
+  for (i in seq_len(p)) {
+    refs[i] <- max(((1 + sqrt(p/N))^2) * (p - sum(refs))/(p - 
+                                                            i + 1), 1)
+  }
+  out <- list(eigenvalues = lambda, n_factors = which(lambda <= 
+                                                        refs)[1] - 1, references = refs, settings = list(use = use, 
+                                                                                                         cor_method = cor_method, N = N))
+  class(out) <- "EKC"
+  return(out)
+}
+###
+
+res_ekc = EKC(R, N = nrow(NDD_group_data))
+
+nFac = res_ekc$n_factors
+
+nFac #to show the number of factors
+
+###Plot variance explained by factor###
+plot(1:ncol(NDD_group_data), res_ekc$eigenvalues,
+     xlab = "Factor", ylab = "Variance Explained",
+     main = ifelse(group == "typical", "typical", "atypical"),
+     xlim = c(0,40), pch = 16,
+     col = (res_ekc$references <= res_ekc$eigenvalues) + 1)
+lines(1:ncol(NDD_group_data), res_ekc$references, lty = 2, lwd = 3,
+      col = "blue")
+
+abline(v = nFac)
+text(x = nFac, y = 100, pos = 2, cex = 0.8,  
+     labels = paste0("Number of Factors\nto be extracted: ", nFac))
