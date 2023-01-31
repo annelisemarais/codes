@@ -87,7 +87,6 @@ data_ERP = df_ERPdata.drop(['condition', 'electrode','sub'], axis=1)
 data_ERP = data_ERP.to_numpy()
 
 
-
 ####
 ##visualization of conditions
 ###
@@ -108,7 +107,7 @@ standard = df_ERPdata[df_ERPdata['condition']==6]
 standard =standard.groupby('electrode', as_index=False).mean()
 standard = standard.drop(['condition', 'sub','electrode'], axis=1)
 
-plt.plot(np.mean(standard.iloc[[28,35]][:]))
+plt.plot(np.mean(familiarization.iloc[[51]][:]))
 plt.show()
 
 ##############
@@ -133,7 +132,7 @@ for i in range(len(matrix)):
     print(n_components, " Components needed")
     break
 
-components_variance = np.array(components_variance)
+components_variance = np.round(np.array(components_variance),decimals=2)
 
 
 ##############
@@ -148,19 +147,14 @@ components = model.components_
 ##Seventh step : plot components
 ##############
 
-#if components[n] as a majority of negative loadings, invert
-def count_signs(loadings):
-	negative_loadings= 0
-	for ts in loadings:
-		if ts < 0:
-		    negative_loadings += 1
-	return negative_loadings
+#if components[n] peak is negative, invert
 
 pos_loadings = model.components_
-for comp in range(0,len(components)):
-	negative_loadings = count_signs(components[comp])
-	if negative_loadings> 500:
-    	pos_loadings[comp] = np.negative(components[comp])
+for ind, comp in enumerate(pos_loadings):
+  peakmax = max(comp)
+  peakmin = abs(min(comp))
+  if peakmax < peakmin:
+    pos_loadings[ind] = np.negative(comp)
 
 
 legend = ['comp1','comp2','comp3','comp4','comp5','comp6','comp7','comp8','comp9']
@@ -197,125 +191,149 @@ for ind, comp in enumerate(pos_loadings):
   plt.savefig("figures/FA_typique_pos_comp_" + str(ind) + ".png".format("PNG"))
 
 
-##############
-## Nineth step : find max of each component, used to label them
-##############
 
-components_max_ind = np.argmax(pos_loadings, axis=1)
-components_max = np.amax(pos_loadings, axis=1)
-
-max_loadings = pos_loadings
-for ind1, comp in enumerate(max_loadings):
-	for ind2, ts in enumerate(comp):
-		if ind2 != int(components_max_ind[ind1]):
-			max_loadings[ind1,ind2] =0
-
-
-plt.close('all')
-plt.plot(max_loadings.T)
-plt.xlabel("Time series (ms)")
-plt.ylabel("Max loadings")
-plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
-plt.legend(labels="123456789")
-plt.savefig("figures/FA_max_loadings_typiques.png")
-plt.show()
-
-##############
-## Tenth step : Match peak loadings with ERP peaks to label them
-##either use components or max
-##############
-
-#In somatosensory areas /early components
-
-#plt.plot(components[1].T)
-#plt.plot(components[7].T)
-#plt.plot(components[8].T)
-plt.plot(components[10].T)
-#plt.plot(components[11].T)
-#plt.plot(components[13].T)
-plt.plot(components[19].T)
-#plt.plot(components[21].T)
-#plt.plot(components[22].T)
-plt.plot(components[26].T)
-plt.plot(np.negative(np.mean(standard.iloc[[27,28,34,35,41,42,47]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(familiarization.iloc[[27,28,34,35,41,42,47]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(deviant.iloc[[27,28,34,35,41,42,47]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(postom.iloc[[27,28,34,35,41,42,47]][:])),linewidth=2, color='k')
-plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
-plt.legend(["comp 10 N140", "comp 19 P100","comp 26 P50", "ERPs"])
-plt.title('Labelling components for somatosensory activation')
-plt.show()
-
-#In frontal areas / late components
-
-#plt.plot(components[0].T)
-plt.plot(components[1].T)
-#plt.plot(components[2].T)
-#plt.plot(components[3].T)
-#plt.plot(components[4].T)
-#plt.plot(components[5].T)
-#plt.plot(components[6].T)
-#plt.plot(components[9].T)
-#plt.plot(components[12].T)
-#plt.plot(components[14].T)
-plt.plot(components[20].T)
-#plt.plot(components[25].T)
-#plt.plot(components[27].T)
-plt.plot(np.negative(np.mean(standard.iloc[[4,5,6,11,12,105,111]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(familiarization.iloc[[4,5,6,11,12,105,111]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(deviant.iloc[[4,5,6,11,12,105,111]][:])),linewidth=2, color='k')
-plt.plot(np.negative(np.mean(postom.iloc[[4,5,6,11,12,105,111]][:])),linewidth=2, color='k')
-plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
-plt.legend(["comp1 P300 ?", "comp 20 LPC", "ERPs"])
-plt.title('Labelling components for frontal activation')
-plt.show()
-
-
-###########
-##Not in the code
-### cumsum of factor scores to understand how it works
-##########
-
-#df_scores = pd.DataFrame(factor_scores)
-
-#frontal_comp_index = df_ERPdata[df_ERPdata['electrode'] == 7]
-#frontal_comp_index_standard = frontal_comp_index.index[frontal_comp_index['condition']==2]
-
-#frontal_comp_standard = df_scores.iloc[frontal_comp_index_standard]
-
-#cs = np.cumsum(abs(frontal_comp_standard), axis=0)
-#print(cs.iloc[-1])
 
 
 ##############
-## Eleventh step : build factor scores
+## Eleventh step : build factor scores and get components' scores topographies
 ##############
 
 factor_scores = model.fit_transform(data_ERP)
 
+#get score topographies
+
+df_scores = pd.DataFrame(factor_scores) #to df
+df_scores_min = df_scores.min().min()
+df_scores_max = df_scores.max().max()
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores['electrode'] = myelectrode #add to df scores
+
+df_scores =df_scores.groupby('electrode', as_index=False).mean()
+df_scores = df_scores.drop(['electrode'],axis=1)
+
+coordinates = pd.read_excel('EEG_coordinates.xlsx')
+coordinates = coordinates.drop(coordinates[coordinates['electrode'] == 'E125'].index)
+coordinates = coordinates.drop(coordinates[coordinates['electrode'] == 'E126'].index)
+coordinates = coordinates.drop(coordinates[coordinates['electrode'] == 'E127'].index)
+coordinates = coordinates.drop(coordinates[coordinates['electrode'] == 'E128'].index)
+coordinates = coordinates.reset_index(drop=True)
+coordinates = coordinates.drop(['electrode'],axis=1)
+
+#save score topographies
+for ind, comp in enumerate(df_scores):
+  plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[comp], cmap='seismic', levels=125, alpha=0.9)
+  plt.clim(df_scores_min, df_scores_max)
+  plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
+  plt.gca().set_frame_on(False)
+  plt.gca().set_xticks([])
+  plt.gca().set_yticks([])
+  circle = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
+  plt.gca().add_patch(circle)
+  plt.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
+  #plt.savefig("figures/FA_typique_scores_topo_" + str(ind) + ".png".format("PNG"))
+  plt.show() 
 
 ########
-## visualisation condition 1 vs condition 3 on these dependant variables
-####### 
+##plot score topographies and latencies to choose components
+#######
 
-# pick the indexes of the particular group under test
-c1_frontal = df_data[df_data['condition']==1][df_data['electrode'].isin([5, 6, 7, 12, 13, 106, 112])][df_data.columns[0:1000]]
-c3_frontal = df_data[df_data['condition']==3][df_data['electrode'].isin([5, 6, 7, 12, 13, 106, 112])][df_data.columns[0:1000]]
+for i in range(28):
+  fig,ax = plt.subplots(2,1,gridspec_kw={'height_ratios': [1, 3]})
+  fig.suptitle('Component '+str(i)+ ', explained variance = '+str(components_variance[i])+'%')
+  ax[0].plot(pos_loadings[i])
+  ax[0].set_ylim([pos_loadings.min().min()-0.5, pos_loadings.max().max()+0.5])
+  ax[0].set_xlabel("Time series (ms)")
+  ax[0].set_xticks(ticks=range(0,999,99))
+  ax[0].set_xticklabels(['-100','0','100','200','300','400','500','600','700','800','900'])
+  ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
+  ax[1].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
+  ax[1].set_axis_off()
+  circle = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
+  ax[1].add_patch(circle)
+  ax[1].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
+  plt.tight_layout()
+  plt.savefig("figures/FA_typique_comp_lat_topo_" + str(i) + ".png".format("PNG"))
 
-# get the factor at specific index
-c1_frontal_stat = factor_scores[c1_frontal.index]
-c3_frontal_stat = factor_scores[c3_frontal.index]
 
-# extract scores for a specific component
-comp_under_test = 1 # up to 6
-var_ind_c3 = c3_frontal_stat[:, comp_under_test]
-var_ind_c1 = c1_frontal_stat[:, comp_under_test]
+my_components = [2,10,19,26]
 
+
+
+
+
+
+
+
+
+
+
+myfactor_scores = factor_scores[:,my_components]
+# Divide data per condition and electrodes
+
+control_somato = df_ERPdata[df_ERPdata['condition']==1][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+deviant_somato = df_ERPdata[df_ERPdata['condition']==2][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+familiarization_somato = df_ERPdata[df_ERPdata['condition']==3][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+postom_somato = df_ERPdata[df_ERPdata['condition']==5][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+standard_somato = df_ERPdata[df_ERPdata['condition']==6][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+stimmoy_somato = df_ERPdata[df_ERPdata['condition']==7][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
+
+control_frontal = df_ERPdata[df_ERPdata['condition']==1][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+deviant_frontal = df_ERPdata[df_ERPdata['condition']==2][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+familiarization_frontal = df_ERPdata[df_ERPdata['condition']==3][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+postom_frontal = df_ERPdata[df_ERPdata['condition']==5][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+standard_frontal = df_ERPdata[df_ERPdata['condition']==6][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+stimmoy_frontal = df_ERPdata[df_ERPdata['condition']==7][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
+
+#get the factor scores from the indeces
+
+control_somato_stat = myfactor_scores[control_somato.index]
+deviant_somato_stat = myfactor_scores[deviant_somato.index]
+familiarization_somato_stat = myfactor_scores[familiarization_somato.index]
+postom_somato_stat = myfactor_scores[postom_somato.index]
+standard_somato_stat = myfactor_scores[standard_somato.index]
+stimmoy_somato_stat = myfactor_scores[stimmoy_somato.index]
+
+control_frontal_stat = myfactor_scores[control_frontal.index]
+deviant_frontal_stat = myfactor_scores[deviant_frontal.index]
+familiarization_frontal_stat = myfactor_scores[familiarization_frontal.index]
+postom_frontal_stat = myfactor_scores[postom_frontal.index]
+standard_frontal_stat = myfactor_scores[standard_frontal.index]
+stimmoy_frontal_stat = myfactor_scores[stimmoy_frontal.index]
 
 ##############
 ##Twelfth step : Statistics
 ##############
 
+
+#prerequisites for t test : Shapiro-wilk & Levene
+
+#Shapiro-Wilk : normal distribution (must NOT be significative)
+from scipy.stats import shapiro
+stat_shap, p_shap = shapiro(control_somato_stat)
+print(pval1)
+
+#Levene : homogeneity of variance (must NOT be significative)
+from scipy.stats import levene
+stats_lev,p_lev = levene(var_ind_con,var_ind_fam)
+
+
+
 # perfom t-test
+
 from scipy import stats
-stats.ttest_rel(var_ind_c1, var_ind_c3)
+
+#statistics for all components at one
+#for comp in list(range(0,28)):
+#  var_ind_con = con_somato_stat[:, comp]
+#  var_ind_fam = fam_somato_stat[:, comp]
+#  print(stats.ttest_rel(var_ind_con, var_ind_fam))
+
+#statistics for my components
+for comp in my_components:
+  var_ind_con = con_somato_stat[:, comp]
+  var_ind_fam = fam_somato_stat[:, comp]
+  print(stats.ttest_rel(var_ind_con, var_ind_fam))
+
+
+
