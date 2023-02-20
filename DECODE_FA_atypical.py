@@ -12,7 +12,7 @@ from sklearn.preprocessing import normalize
 import math
 
 # load typical matlab file (as dictionnary)
-data = loadmat('data/Typical_PCA.mat')['Typical_PCA'] # 23478*1000
+data = loadmat('data/Atypical_PCA.mat')['Atypical_PCA'] # 23478*1000
 
 df_data = pd.DataFrame(data)
 
@@ -27,7 +27,7 @@ df_badchan = df_standardized[df_standardized>3]
 df_badchan = df_badchan.replace(np.nan,0)
 #cumsum to easily find those channels in the last column
 df_badchan = df_badchan.cumsum(axis=1)
-df_badchan.to_excel("df_badchan_typical.xlsx") #for manual checking
+df_badchan.to_excel("df_badchan_atypical.xlsx") #for manual checking
 #get the last column
 df_mybadchan = df_badchan[999]
 #find index of non zero (bad channel) rwos
@@ -38,17 +38,17 @@ df_mybadchan = df_mybadchan.index[df_mybadchan>0]
 #######
 
 sub = []
-for i in range(1,27): #26 subjects
+for i in range(1,10): #9 subjects
     new_sub = [i] * 129* 7 #129 channels and 7 conditions
     sub += new_sub
 
 condition = []
-for j in range(1, 27): #26 subjects
+for j in range(1, 10): #9 subjects
   for i in range(1,8): #7conditions
     new_condition = [i] * 129 #channels
     condition += new_condition
 
-electrode = list(range(1, 130)) * 26 *7
+electrode = list(range(1, 130)) * 9 *7
 
 
 df_data['condition'] = condition
@@ -170,7 +170,7 @@ def plot_ts(loadings):
   plt.ylabel("Loadings")
   plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
   plt.legend(legend)
-  plt.savefig("figures/FA_loadings_typiques.png")
+  plt.savefig("figures/FA_loadings_atypiques.png")
 
 plot_ts(pos_loadings)
 plt.show()
@@ -190,4 +190,54 @@ for ind, comp in enumerate(pos_loadings):
   plt.ylabel("arbitrary unit")
   plt.xlabel("Time series (ms)")
   plt.title("comp_" + str(ind) + " explained variance = " + str(round(components_variance[ind],3)))
-  plt.savefig("figures/FA_typique_pos_comp_" + str(ind) + ".png".format("PNG"))
+  plt.savefig("figures/FA_atypique_pos_comp_" + str(ind) + ".png".format("PNG"))
+
+
+
+############
+##find max
+############
+
+components_max_ind = np.argmax(pos_loadings, axis=1)
+components_max = np.amax(pos_loadings, axis=1)
+
+max_loadings = pos_loadings
+for ind1, comp in enumerate(max_loadings):
+  for ind2, ts in enumerate(comp):
+    if ind2 != int(components_max_ind[ind1]):
+      max_loadings[ind1,ind2] =0
+
+
+plt.close('all')
+plt.plot(max_loadings.T)
+plt.xlabel("Time series (ms)")
+plt.ylabel("Max loadings")
+plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
+plt.legend(labels="123456789")
+plt.savefig("figures/FA_max_loadings_atypique.png")
+plt.show()
+
+#Non expliqué
+plt.plot(max_loadings[0].T)
+plt.plot(max_loadings[2].T)
+plt.plot(max_loadings[3].T)
+plt.plot(max_loadings[5].T)
+plt.plot(max_loadings[11].T)
+plt.plot(max_loadings[13].T)
+plt.plot(max_loadings[17].T)
+plt.plot(max_loadings[18].T)
+plt.plot(max_loadings[23].T)
+plt.plot(max_loadings[27].T)
+plt.legend('0235137837')
+plt.show()
+
+#found match ! 
+
+plt.plot(pos_loadings[1].T)
+plt.plot(pos_loadings[4].T)
+plt.plot(pos_loadings[6].T)
+plt.plot(pos_loadings[7].T)
+plt.plot(pos_loadings[12].T)
+plt.plot(pos_loadings[18].T)
+plt.plot(pos_loadings[19].T)
+plt.show()

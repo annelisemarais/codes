@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.decomposition import FactorAnalysis
 from sklearn.preprocessing import normalize
 import math
-import pandas as pd
 
 # load typical matlab file (as dictionnary)
-data = loadmat('data/Typical_PCA_Unref.mat')['Typical_PCA_Unref'] # 23478*1000
+data = loadmat('data/Typical_PCA.mat')['Typical_PCA'] # 23478*1000
 
  
 ########
@@ -59,6 +59,7 @@ kaiser_model.fit(data3)
 
 # get how many components needed to reach 99% of explained variance
 perc_var_explained = 0
+
 for ind, i in enumerate(kaiser_model.explained_variance_ratio_):
   perc_var_explained += i
   if perc_var_explained>0.99:
@@ -70,17 +71,20 @@ for ind, i in enumerate(kaiser_model.explained_variance_ratio_):
 ## Second step : keep only the needed nb of components 
 #######
 
-model = PCA(n_components=n_component_to_keep)
+model = FactorAnalysis(n_components=n_component_to_keep)
 model.fit(data3)
 loadings = model.components_
+
 
 # plot the loadings:
 def plot_ts(loadings):
   plt.close('all')
   for ind, comp in enumerate(loadings):
-    plt.plot(range(0, 1000), comp, linewidth=3, label='comp{}'.format(ind))
+    plt.plot(range(0, 500), comp, linewidth=3, label='comp{}'.format(ind))
   plt.xlabel("Time series (ms)")
   plt.ylabel("Loadings")
+  #plt.set_xticks(range(0,999,99))
+  #plt.set_xticklabels(['-100','0','100','200','300','400','500','600','700','800','900'])
   #plt.savefig("Components.png")
 plot_ts(loadings)
 plt.legend()
