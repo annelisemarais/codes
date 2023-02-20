@@ -1,2 +1,2 @@
 # codes
- DECODE thesis data anylisis codes
+ DECODE thesis data analysis codes
