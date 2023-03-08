@@ -52,6 +52,8 @@ df_rawdata['age'] = age
 
 df_rawdata #check data
 
+#df_rawdata.to_csv("data/typical/df_rawdata.csv")
+
 
 ########
 ###Resolve class imbalance  by upsampling six years old
@@ -77,7 +79,9 @@ for i in range(25,37):
 
 sixyo_resampled['sub']=sub
 
-df_data = df_data.append(sixyo_resampled)
+df_data = df_data.append(sixyo_resampled).reset_index(drop=True)
+
+#save#df_data.to_csv("data/typical/df_data_resampled.csv")
 
 ##############
 ##Second step : Remove bad channels and eye channels
@@ -94,7 +98,7 @@ df_badchan = df_badchan.replace(np.nan,0)
 df_badchan = df_badchan.cumsum(axis=1)
 
 #save
-#df_badchan.to_excel("data/typical/df_typ_badchan.xlsx") #for manual checking
+#df_badchan.to_csv("data/typical/df_typ_badchan.csv") #for manual checking
 
 #get the last column
 df_mybadchan = df_badchan[999]
@@ -106,7 +110,7 @@ df_mybadchan = df_mybadchan.index[df_mybadchan>0]
 df_nobadchannel = df_data.drop(index=df_mybadchan)
 
 #save
-#df_nobadchannel.to_excel("data/typical/df_typ_nobadchannel.xlsx")
+#df_nobadchannel.to_csv("data/typical/df_typ_nobadchannel.csv")
 
 #delete eye channels
 df_clean = df_nobadchannel.drop(df_nobadchannel[df_nobadchannel['electrode'] ==125].index)
@@ -115,7 +119,7 @@ df_clean = df_clean.drop(df_clean[df_clean['electrode'] ==127].index)
 df_clean = df_clean.drop(df_clean[df_clean['electrode'] ==128].index)
 
 #save
-#df_clean.to_excel("data/typical/df_typ_clean.xlsx")
+#df_clean.to_csv("data/typical/df_typ_clean.csv")
 
 ##############
 ## Third step : separate data for PCA1 (data without omission) and PCA2 (omission only) 
@@ -129,8 +133,8 @@ df_omi = df_clean[df_clean['condition']==4]
 df_omi = df_omi.reset_index(drop=True)
 
 #save new dfs
-#df_ERPdata.to_excel("data/typical/ERPdata/df_ERP_typ.xlsx")
-#df_omi.to_excel("data/typical/omission/df_omi_typ.xlsx")
+#df_ERPdata.to_csv("data/typical/ERPdata/df_ERP_typ.csv")
+#df_omi.to_csv("data/typical/omission/df_omi_typ.csv")
 
 #df to numpy to do the PCA
 ERPdata = df_ERPdata.drop(['condition', 'electrode','sub','age'], axis=1)
@@ -377,7 +381,7 @@ df_scores_dev = scores_percond(df_scores_cond,2)
 df_scores_MMN = df_scores_dev - df_scores_std
 df_scores_fam = scores_percond(df_scores_cond,3)
 df_scores_con = scores_percond(df_scores_cond,1)
-df_scores_pom = scores_percond(df_scores_cond,5)
+df_scores_RS = df_scores_fam - df_scores_con
 
 plt.close('all')
 for i in range(27):
@@ -407,8 +411,8 @@ for i in range(27):
 
 plt.close('all')
 for i in range(27):
-  plot_scores(pos_loadings[i],df_scores_pom[i])
-  plt.savefig("figures/typical/ERPdata/percond/FA_typ_pom_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plot_scores(pos_loadings[i],df_scores_RS[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
 plt.close('all')
 
@@ -446,12 +450,108 @@ for i in range(len(components)):
   plot_scores(pos_loadings[i],df_scores_six[i])
   plt.savefig("figures/typical/ERPdata/perage/comp_typ_six_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+##plot components latencies and topographies per age per condition
 
+df_scores_agecond = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_agecond['electrode'] = myelectrode #add to df scores
+myage = df_ERPdata['age'] #get clean age
+df_scores_agecond['age'] = myage
+mycond = df_ERPdata['condition']
+df_scores_agecond['condition'] = mycond
+
+def scores_peragecond(age,condition,factor_scores):
+  myage = factor_scores[factor_scores['age']==age]
+  mycond = myage[myage['condition']==condition]
+  myage_cond = mycond.groupby('electrode', as_index=False).mean()
+  myage_cond = myage_cond.drop(['electrode'],axis=1)
+  return myage_cond
+
+df_scores_two_fam = scores_peragecond(2,3,df_scores_agecond)
+df_scores_two_con = scores_peragecond(2,1,df_scores_agecond)
+df_scores_two_RS = df_scores_two_fam - df_scores_two_con
+df_scores_two_dev = scores_peragecond(2,2,df_scores_agecond)
+df_scores_two_std = scores_peragecond(2,7,df_scores_agecond)
+df_scores_two_MMN = df_scores_two_dev - df_scores_two_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_two_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+
+df_scores_four_fam = scores_peragecond(4,3,df_scores_agecond)
+df_scores_four_con = scores_peragecond(4,1,df_scores_agecond)
+df_scores_four_RS = df_scores_four_fam - df_scores_four_con
+df_scores_four_dev = scores_peragecond(4,2,df_scores_agecond)
+df_scores_four_std = scores_peragecond(4,7,df_scores_agecond)
+df_scores_four_MMN = df_scores_four_dev - df_scores_four_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_four_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+
+df_scores_six_fam = scores_peragecond(6,3,df_scores_agecond)
+df_scores_six_con = scores_peragecond(6,1,df_scores_agecond)
+df_scores_six_RS = df_scores_six_fam - df_scores_six_con
+df_scores_six_dev = scores_peragecond(6,2,df_scores_agecond)
+df_scores_six_std = scores_peragecond(6,7,df_scores_agecond)
+df_scores_six_MMN = df_scores_six_dev - df_scores_six_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_six_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
 
 ######################
 ##Tenth step : Extract data for statistics
 ######################
-
 
 ##All subjects analysis
 
@@ -460,47 +560,111 @@ somato = [36,41,42,46,47,51,52,53]
 frontal = [5, 6, 7, 12, 13, 106, 112,129]
 mycomponents = ([14,10]) #my components are 15 for N140 and 11 for P300
 
-def scores2stat(df,condition,electrode,factor_scores,component):
-  mystat = df[df['condition']==condition][df['electrode'].isin(electrode)][df.columns[0:1000]].index
-  mystat = factor_scores[mystat]
-  mystat = mystat.T
-  mystat = mystat[component]
-  return mystat
+df_scores_cond = pd.DataFrame(factor_scores)
 
-control_somato = scores2stat(df_ERPdata,1,somato,factor_scores,14)
-deviant_somato = scores2stat(df_ERPdata,2,somato,factor_scores,14)
-familiarization_somato = scores2stat(df_ERPdata,3,somato,factor_scores,14)
-standard_somato = scores2stat(df_ERPdata,7,somato,factor_scores,14)
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_cond['electrode'] = myelectrode #add to df scores
+mycond = df_ERPdata['condition']
+df_scores_cond['condition'] = mycond
 
-control_frontal = scores2stat(df_ERPdata,1,frontal,factor_scores,10)
-deviant_frontal = scores2stat(df_ERPdata,2,frontal,factor_scores,10)
-familiarization_frontal = scores2stat(df_ERPdata,3,frontal,factor_scores,10)
-standard_frontal = scores2stat(df_ERPdata,7,frontal,factor_scores,10)
+def scores2stat(condition,electrode,df_scores,component):
+  mydata = df_scores[df_scores['condition']==condition][df_scores['electrode'].isin(electrode)]
+  mycomp = mydata[component]
+  return mycomp
+
+scores_con_somato = scores2stat(1,somato,df_scores_cond,14)
+scores_dev_somato = scores2stat(2,somato,df_scores_cond,14)
+scores_fam_somato = scores2stat(3,somato,df_scores_cond,14)
+scores_std_somato = scores2stat(7,somato,df_scores_cond,14)
+
+scores_con_frontal = scores2stat(1,frontal,df_scores_cond,10)
+scores_dev_frontal = scores2stat(2,frontal,df_scores_cond,10)
+scores_fam_frontal = scores2stat(3,frontal,df_scores_cond,10)
+scores_std_frontal = scores2stat(7,frontal,df_scores_cond,10)
 
 
 ##Compare components per age
 
 df_scores_age = pd.DataFrame(factor_scores)
 
-def comp_perage(df,age,electrode,mycomponents):
-  myindex = df[df['age']==age][df['electrode'].isin(electrode)][df.columns[0:1000]].index
-  mystat = df_scores_age.iloc[myindex]
-  mystat = mystat[mycomponents]
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_age['electrode'] = myelectrode #add to df scores
+myage = df_ERPdata['age']
+df_scores_age['age'] = myage
+
+def comp_perage(df_scores,age,electrode,component):
+  mydata = df_scores[df_scores['age']==age][df_scores['electrode'].isin(electrode)]
+  mystat = mydata[component]
   return mystat
 
-
-two_scores_mycomp = comp_perage(df_ERPdata,2,somato,mycomponents)
-four_scores_mycomp = comp_perage(df_ERPdata,4,somato,mycomponents)
-six_scores_mycomp = comp_perage(df_ERPdata,6,somato,mycomponents)
+two_scores_comp14 = comp_perage(df_scores_age,2,somato,14)
+four_scores_comp14 = comp_perage(df_scores_age,4,somato,14)
+six_scores_comp14 = comp_perage(df_scores_age,6,somato,14)
+two_scores_comp10 = comp_perage(df_scores_age,2,somato,10)
+four_scores_comp10 = comp_perage(df_scores_age,4,somato,10)
+six_scores_comp10 = comp_perage(df_scores_age,6,somato,10)
 
 
 ##Compare condition per age
 
+df_scores_age_cond = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_age_cond['electrode'] = myelectrode #add to df scores
+mycond = df_ERPdata['condition']
+df_scores_age_cond['condition'] = mycond
+myage = df_ERPdata['age']
+df_scores_age_cond['age'] = myage
+
+def comp_perage_percond(df_scores,age,electrode,condition,component):
+  mydata = df_scores[df_scores['age']==age][df_scores['condition']==condition][df_scores['electrode'].isin(electrode)]
+  mystat = mydata[component].reset_index(drop=True)
+  return mystat
 
 
+scores_two_fam_somato = comp_perage_percond(df_scores_age_cond,2,somato,3,14)
+scores_two_con_somato = comp_perage_percond(df_scores_age_cond,2,somato,1,14)
+scores_two_RS_somato = scores_two_fam_somato - scores_two_con_somato
+scores_two_std_somato = comp_perage_percond(df_scores_age_cond,2,somato,7,14)
+scores_two_dev_somato = comp_perage_percond(df_scores_age_cond,2,somato,2,14)
+scores_two_MMN_somato = scores_two_dev_somato - scores_two_std_somato
+
+scores_two_fam_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,3,14)
+scores_two_con_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,1,14)
+scores_two_RS_frtl = scores_two_fam_frtl - scores_two_con_frtl
+scores_two_std_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,7,14)
+scores_two_dev_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,2,14)
+scores_two_MMN_frtl = scores_two_dev_frtl - scores_two_std_frtl
 
 
+scores_four_fam_somato = comp_perage_percond(df_scores_age_cond,4,somato,3,14)
+scores_four_con_somato = comp_perage_percond(df_scores_age_cond,4,somato,1,14)
+scores_four_RS_somato = scores_four_fam_somato - scores_four_con_somato
+scores_four_std_somato = comp_perage_percond(df_scores_age_cond,4,somato,7,14)
+scores_four_dev_somato = comp_perage_percond(df_scores_age_cond,4,somato,2,14)
+scores_four_MMN_somato = scores_four_dev_somato - scores_four_std_somato
 
+scores_four_fam_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,3,14)
+scores_four_con_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,1,14)
+scores_four_RS_frtl = scores_four_fam_frtl - scores_four_con_frtl
+scores_four_std_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,7,14)
+scores_four_dev_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,2,14)
+scores_four_MMN_frtl = scores_four_dev_frtl - scores_four_std_frtl
+
+
+scores_six_fam_somato = comp_perage_percond(df_scores_age_cond,6,somato,3,14)
+scores_six_con_somato = comp_perage_percond(df_scores_age_cond,6,somato,1,14)
+scores_six_RS_somato = scores_six_fam_somato - scores_six_con_somato
+scores_six_std_somato = comp_perage_percond(df_scores_age_cond,6,somato,7,14)
+scores_six_dev_somato = comp_perage_percond(df_scores_age_cond,6,somato,2,14)
+scores_six_MMN_somato = scores_six_dev_somato - scores_six_std_somato
+
+scores_six_fam_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,3,14)
+scores_six_con_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,1,14)
+scores_six_RS_frtl = scores_six_fam_frtl - scores_six_con_frtl
+scores_six_std_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,7,14)
+scores_six_dev_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,2,14)
+scores_six_MMN_frtl = scores_six_dev_frtl - scores_six_std_frtl
 
 
 
@@ -509,10 +673,10 @@ six_scores_mycomp = comp_perage(df_ERPdata,6,somato,mycomponents)
 ##Tenth step : Statistics
 ######################
 
-tests = [(familiarization_somato, control_somato),(familiarization_frontal, control_frontal), (deviant_somato, standard_somato),(deviant_frontal, standard_frontal),(two_scores_mycomp[14],four_scores_mycomp[14]),(two_scores_mycomp[14],six_scores_mycomp[14]),(four_scores_mycomp[14],six_scores_mycomp[14]),(two_scores_mycomp[10],four_scores_mycomp[10]),(two_scores_mycomp[10],six_scores_mycomp[10]),(four_scores_mycomp[10],six_scores_mycomp[10])]
+tests = [(scores_fam_somato, scores_con_somato),(scores_fam_frontal, scores_con_frontal), (scores_dev_somato, scores_std_somato),(scores_dev_frontal, scores_std_frontal),(two_scores_comp14,four_scores_comp14),(two_scores_comp14,six_scores_comp14),(four_scores_comp14,six_scores_comp14),(two_scores_comp10,four_scores_comp10),(two_scores_comp10,six_scores_comp10),(four_scores_comp10,six_scores_comp10),(scores_two_fam_somato, scores_two_con_somato), (scores_two_fam_frtl, scores_two_con_frtl), (scores_two_dev_somato, scores_two_std_somato), (scores_two_dev_frtl, scores_two_std_frtl), (scores_four_fam_somato, scores_four_con_somato), (scores_four_fam_frtl, scores_four_con_frtl), (scores_four_dev_somato, scores_four_std_somato), (scores_four_dev_frtl, scores_four_std_frtl), (scores_six_fam_somato, scores_six_con_somato), (scores_six_fam_frtl, scores_six_con_frtl), (scores_six_dev_somato, scores_six_std_somato), (scores_six_dev_frtl, scores_six_std_frtl), (scores_two_RS_somato, scores_four_RS_somato), (scores_two_RS_somato, scores_six_RS_somato), (scores_four_RS_somato, scores_six_RS_somato), (scores_two_RS_frtl, scores_four_RS_frtl), (scores_two_RS_frtl, scores_six_RS_frtl), (scores_four_RS_frtl, scores_six_RS_frtl), (scores_two_MMN_somato, scores_four_MMN_somato), (scores_two_MMN_somato, scores_six_MMN_somato), (scores_four_MMN_somato, scores_six_MMN_somato), (scores_two_MMN_frtl, scores_four_MMN_frtl), (scores_two_MMN_frtl, scores_six_MMN_frtl), (scores_four_MMN_frtl, scores_six_MMN_frtl)]
 n_tests = len(tests)
 
-df_p_value = pd.DataFrame(columns=['p_values'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','twofour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300','foursix_P300'])
+df_p_value = pd.DataFrame(columns=['p_values'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','twofour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300','foursix_P300', 'two_RS_somato', 'two_RS_frtl', 'two_MMN_somato', 'two_MMN_frtl', 'four_RS_somato', 'four_RS_frtl', 'four_MMN_somato', 'four_MMN_frtl', 'six_RS_somato', 'six_RS_frtl',  'six_MMN_somato', 'six_MMN_frtl', 'twofour_RS_somato', 'twosix_RS_somato', 'foursix_RS_somato', 'twofour_RS_frtl', 'twosix_RS_frtl', 'foursix_RS_frtl', 'twofour_MMN_somato', 'twosix_MMN_somato', 'foursix_MMN_somato', 'twofour_MMN_frtl', 'twosix_MMN_frtl', 'foursix_MMN_frtl'])
 p_values = []
 for ind, samples in enumerate(tests):
   sample1 = samples[0]
@@ -523,7 +687,7 @@ for ind, samples in enumerate(tests):
 
 p_values = np.array(p_values)
 
-significant, corrected_p_values, _, _ = multipletests(p_values, method='holm')
+significant, corrected_p_values, _, _ = multipletests(p_values, method='fdr_bh')
 
 df_p_value['significant'] = significant
 df_p_value['corrected'] = corrected_p_values
@@ -550,51 +714,6 @@ df_p_value['corrected'] = corrected_p_values
 
 
 
-myindex = df_ERPdata[df_ERPdata['age']==2][df_ERPdata['electrode'].isin([36,41,42,46,47,51,52,53])][df_ERPdata.columns[0:1000]].index
-
-
-
-
-
-df_scores_age = pd.DataFrame(factor_scores)
-
-def scores_age2stat(df,condition,age,electrode,factor_scores):
-  mystat = df[df['condition']==condition][df['age']==age][df['electrode'].isin(electrode)][df.columns[0:1000]].index
-  mystat = factor_scores.iloc[mystat]
-  mystat = mystat[mycomponents]
-  return mystat
-
-
-two_control_somato = scores_age2stat(df_ERPdata,1,2,somato,df_scores_age)
-two_deviant_somato = scores_age2stat(df_ERPdata,2,2,somato,df_scores_age)
-two_familiarization_somato = scores_age2stat(df_ERPdata,3,2,somato,df_scores_age)
-two_standard_somato = scores_age2stat(df_ERPdata,7,2,somato,df_scores_age)
-two_control_frontal = scores_age2stat(df_ERPdata,1,2,frontal,df_scores_age)
-two_deviant_frontal = scores_age2stat(df_ERPdata,2,2,frontal,df_scores_age)
-two_familiarization_frontal = scores_age2stat(df_ERPdata,3,2,frontal,df_scores_age)
-two_standard_frontal = scores_age2stat(df_ERPdata,7,2,frontal,df_scores_age)
-
-four_control_somato = scores_age2stat(df_ERPdata,1,4,somato,df_scores_age)
-four_deviant_somato = scores_age2stat(df_ERPdata,2,4,somato,df_scores_age)
-four_familiarization_somato = scores_age2stat(df_ERPdata,3,4,somato,df_scores_age)
-four_standard_somato = scores_age2stat(df_ERPdata,7,4,somato,df_scores_age)
-four_control_frontal = scores_age2stat(df_ERPdata,1,4,frontal,df_scores_age)
-four_deviant_frontal = scores_age2stat(df_ERPdata,2,4,frontal,df_scores_age)
-four_familiarization_frontal = scores_age2stat(df_ERPdata,3,4,frontal,df_scores_age)
-four_standard_frontal = scores_age2stat(df_ERPdata,7,4,frontal,df_scores_age)
-
-six_control_somato = scores_age2stat(df_ERPdata,1,6,somato,df_scores_age)
-six_deviant_somato = scores_age2stat(df_ERPdata,2,6,somato,df_scores_age)
-six_familiarization_somato = scores_age2stat(df_ERPdata,3,6,somato,df_scores_age)
-six_standard_somato = scores_age2stat(df_ERPdata,7,6,somato,df_scores_age)
-six_control_frontal = scores_age2stat(df_ERPdata,1,6,frontal,df_scores_age)
-six_deviant_frontal = scores_age2stat(df_ERPdata,2,6,frontal,df_scores_age)
-six_familiarization_frontal = scores_age2stat(df_ERPdata,3,6,frontal,df_scores_age)
-six_standard_frontal = scores_age2stat(df_ERPdata,7,6,frontal,df_scores_age)
-
-#############
-##Statistics per age
-############
 
 
 
@@ -604,113 +723,6 @@ six_standard_frontal = scores_age2stat(df_ERPdata,7,6,frontal,df_scores_age)
 
 
 
-
-
-
-
-
-################
-##PER AGE
-################
-
-
-for i in range(27): 
-  fig,ax = plt.subplots(figsize=(12, 6))
-  grid = plt.GridSpec(3, 3, wspace =0.3, hspace = 0.3)
-  ax0 = plt.subplot(grid[0, 0:2])
-  ax1 = plt.subplot(grid[1:, 0])
-  ax2 = plt.subplot(grid[1:, 1])
-  ax3 = plt.subplot(grid[1:, 2])
-  fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance[i])+'%')
-  ax0.plot(pos_loadings[i])
-  ax0.set_ylim([pos_loadings.min().min()-0.5, pos_loadings.max().max()+0.5])
-  ax0.set_xlabel("Time series (ms)")
-  ax0.set_xticks(ticks=range(0,999,99))
-  ax0.set_xticklabels(['-100','0','100','200','300','400','500','600','700','800','900'])
-  ax1.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax2.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_four[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax3.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_six[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax1.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax2.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax3.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax1.set_axis_off()
-  ax2.set_axis_off()
-  ax3.set_axis_off()
-  circle1 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle2 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle3 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  ax1.add_patch(circle1)
-  ax2.add_patch(circle2)
-  ax3.add_patch(circle3)
-  ax1.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax2.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax3.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax1.text(-1,-3.5,'two years old')
-  ax2.text(-1,-3.5,'four years old')
-  ax3.text(-1,-3.5,'six years old')
-  plt.tight_layout()
-  plt.savefig("figures/FA_typique_per_age_lat_topo_" + str(i) + ".png".format("PNG"))
-
-
-def df_perage_percond(df, age, condition):
-  df_age = df[df['age']==age]
-  df_age = df_age.drop(['age'],axis=1)
-  df_cond = df_age[df_age['condition']==condition]
-  df_cond = df_cond.drop(['condition'],axis=1)
-  df_cond = df_cond.groupby(['electrode'], as_index=False).mean()
-  df_cond = df_cond.drop(['electrode'],axis=1)
-  return df_cond
-
-mycond = df_ERPdata['condition'] #get clean age
-df_scores_age['condition'] = mycond
-
-
-df_scores_two_fam = df_perage_percond(df_scores_age, 2, 3)
-df_scores_two_con = df_perage_percond(df_scores_age, 2, 1)
-df_scores_two_std = df_perage_percond(df_scores_age, 2, 7)
-df_scores_two_dev = df_perage_percond(df_scores_age, 2, 2)
-df_scores_four_fam = df_perage_percond(df_scores_age, 4, 3)
-df_scores_four_con = df_perage_percond(df_scores_age, 4, 1)
-df_scores_four_std = df_perage_percond(df_scores_age, 4, 7)
-df_scores_four_dev = df_perage_percond(df_scores_age, 4, 2)
-df_scores_six_fam = df_perage_percond(df_scores_age, 6, 3)
-df_scores_six_con = df_perage_percond(df_scores_age, 6, 1)
-df_scores_six_std = df_perage_percond(df_scores_age, 6, 7)
-df_scores_six_dev = df_perage_percond(df_scores_age, 6, 2)
-
-
-#figure 4 brain, comp scores at two yo, std, dev, fam, con
-
-for i in range(27):
-  fig,ax = plt.subplots(1,4, figsize=(18,6))
-  fig.suptitle('component for 2 yo in P1')
-  ax[0].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two_std[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two_dev[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax[2].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two_fam[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax[3].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two_con[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax[0].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax[1].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax[2].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax[3].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax[0].set_axis_off()
-  ax[1].set_axis_off()
-  ax[2].set_axis_off()
-  ax[3].set_axis_off()
-  circle1 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle2 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle3 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle4 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  ax[0].add_patch(circle1)
-  ax[1].add_patch(circle2)
-  ax[2].add_patch(circle3)
-  ax[3].add_patch(circle4)
-  ax[0].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax[1].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax[2].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax[3].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  plt.tight_layout()
-  plt.show()
-  #plt.savefig("figures/FA_typique_per_age_lat_topo_" + str(i) + ".png".format("PNG"))
 
 
 
@@ -792,35 +804,34 @@ for i in range(27):
 ##OMISSION ANALYSIS
 #####################################################
 
-df_omission = df_clean[df_clean["condition"]==4]
-df_omission = df_omission.reset_index(drop=True)
+
 #save#df_omission.to_excel("df_omission_typical.xlsx")
-data_omission = df_omission.drop(['condition', 'electrode','sub','age'], axis=1)
-data_omission = data_omission.to_numpy()
+data_omi = df_omi.drop(['condition', 'electrode','sub','age'], axis=1)
+data_omi = data_omi.to_numpy()
 
 
 ##############
-## Fifth step : compute full PCA to get needed nb of components for 99% of variance
+## Forth step : compute full PCA to get needed nb of components for 99% of variance
 ##############
 
 kaiser_model_omi = FactorAnalysis()
-kaiser_model_omi.fit(data_omission)
+kaiser_model_omi.fit(data_omi)
 
-# get how many components needed to reach 99% of explained variance
+# get n components needed to reach 99% of explained variance
 perc_var_explained_omi = 0
 n_components_omi=0
-components_variance_omi = []
-matrix_omi = np.sum(kaiser_model_omi.components_**2, axis=1)
+components_variance_omi = list()
+matrix = np.sum(kaiser_model_omi.components_**2, axis=1)
 
 for i in range(len(matrix)):
-  variance_comp_omi = (100*matrix_omi[i])/np.sum(matrix_omi)
+  variance_comp_omi = (100*matrix[i])/np.sum(matrix)
   perc_var_explained_omi += variance_comp_omi
   n_components_omi = i
   if perc_var_explained_omi>99:
     print(n_components_omi, " Components needed")
     break
   else:
-      components_variance_omi.append(variance_comp_omi)
+    components_variance_omi.append(variance_comp_omi)
 
 components_variance_omi = np.round(np.array(components_variance_omi),decimals=2)
 
@@ -831,31 +842,37 @@ list_components_omi = list(range(1,n_components_omi+1))
 plt.scatter(list_components_omi, cum_variance_omi, color='k')
 plt.axhline(y=99, c='r')
 plt.yticks(list(range(50,110,10)))
-plt.xlabel("Components")
+plt.xlabel("Components omission")
 plt.ylabel("Explained variance (%)")
 plt.title("Explained variance per component")
-plt.savefig("figures/scree_plot_omi_typiques.png")
+plt.savefig("figures/typical/omission/ERP_typ_omi_screeplot.png")
 plt.show()
 
 
 df_components_variance_omi = pd.DataFrame(components_variance_omi)
-#save#df_components_variance.to_excel("components_variance_typical.xlsx")
+
+#save
+#df_components_variance.to_excel("data/typical/ERPdata/df_ERP_typ_components_variance.xlsx")
+
+
 ##############
-## Sixth step : compute PCA with number of components
+## Fifth step : compute PCA1
 ##############
 
-model_omi = FactorAnalysis(n_components=n_components_omi, rotation='varimax')
-model_omi.fit(data_omission)
+model_omi = FactorAnalysis(n_components=n_components, rotation='varimax')
+model_omi.fit(data_omi)
 components_omi = model_omi.components_
 
-df_components_omi = pd.DataFrame(components_omi)
-#save#df_components_omi.to_excel("components_omi_typical.xlsx")
+df_components_omi = pd.DataFrame(components_omi) #nb_components * 1000 time series
+
+#save
+#df_components.to_excel("data/typical/dataERP/df_ERP_components_typical.xlsx")
+
 ##############
-##Seventh step : plot components
+##Sixth step : plot and save components loadings
 ##############
 
 #if components[n] peak is negative, invert
-
 pos_loadings_omi = model_omi.components_
 for ind, comp in enumerate(pos_loadings_omi):
   peakmax = max(comp)
@@ -865,60 +882,53 @@ for ind, comp in enumerate(pos_loadings_omi):
 
 
 # plot the loadings:
-def plot_ts_omi(loadings):
+def plot_ts(loadings):
   plt.close('all')
   for ind, comp in enumerate(loadings):
     plt.plot(range(0, 1000), comp, linewidth=3)
   plt.xlabel("Time series (ms)")
   plt.ylabel("Loadings")
-  plt.xticks(ticks=range(0,999,99), labels =['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
-  plt.savefig("figures/FA_loadings_omi_typiques.png")
+  plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
+  plt.savefig("figures/typical/FA_loadings_omi_typ.png")
 
-plot_ts_omi(pos_loadings_omi)
+plot_ts(pos_loadings)
 plt.show()
 
+##components on by one
+#for ind, comp in enumerate(pos_loadings):
+#  plt.close('all')
+#  plt.plot(comp)
+#  plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
+#  plt.ylim([round(components.min().min())-0.5,round(components.max().max())+0.5])
+#  plt.ylabel("arbitrary unit")
+#  plt.xlabel("Time series (ms)")
+#  plt.title("comp_" + str(ind) + " explained variance = " + str(round(components_variance[ind],3)))
+#  plt.savefig("figures/typical/FA_loadings_typ_" + str(ind) + ".png".format("PNG"))
 
-##############
-## Eigth step : save componenent 1 by 1
-##############
-
-#save components
-for ind, comp in enumerate(pos_loadings_omi):
-  plt.close('all')
-  plt.plot(comp)
-  plt.xticks(ticks=range(0,999,99), labels =['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
-  plt.ylim([round(components.min().min())-0.5,round(components.max().max())+0.5])
-  plt.ylabel("arbitrary unit")
-  plt.xlabel("Time series (ms)")
-  plt.title("comp_" + str(ind) + " explained variance = " + str(round(components_variance_omi[ind],3)))
-  plt.savefig("figures/FA_typique_omi_pos_comp_" + str(ind) + ".png".format("PNG"))
-
-
-############
-##Get max loadings
-############
+##Get max loadings to determine their latencies
 loadings_max_omi = {}
 for ind, comp in enumerate(pos_loadings_omi):
-  load_max = np.argmax(pos_loadings_omi[ind]) - 500
-  loadings_max_omi[ind+1] = load_max
+  load_max_omi = np.argmax(pos_loadings_omi[ind]) - 500
+  loadings_max_omi[ind+1] = load_max_omi
 
 sorted_max_omi = dict(sorted(loadings_max_omi.items(), key=lambda item: item[1]))
 df_max_omi = pd.DataFrame(data=sorted_max_omi, index=[0]).T
-df_max_omi.to_excel('df_max_omi_loadings.xlsx')
+df_max_omi.to_excel('data/typical/omission/df_omi_max_loadings.xlsx')
 
 ##############
-## Eleventh step : build factor scores and get components' scores topographies
+## Seventh step : build factor scores and get components' scores topographies
 ##############
 
-factor_scores_omi = model_omi.fit_transform(data_omission)
+factor_scores_omi = model_omi.fit_transform(data_omi)
+df_factor_scores_omi = pd.DataFrame(factor_scores_omi) #22385 data * 27 components
 
-df_scores_omi = pd.DataFrame(factor_scores_omi)
-#save#df_scores.to_excel("scores_typical.xlsx")
+#save
+#df_factor_scores.to_excel("data/typical/ERPdata/df_ERP_factor_scores_typical.xlsx")
 
-myelectrode = df_omission['electrode'] #get clean electrodes
-df_scores_omi['electrode'] = myelectrode #add to df scores
+df_scores_omi = df_factor_scores_omi
 
-df_scores_age_omi = df_scores_omi #keep for later
+myelec_omi = df_omi['electrode'] #get clean electrodes
+df_scores_omi['electrode'] = myelec #add to df scores
 
 df_scores_omi =df_scores_omi.groupby('electrode', as_index=False).mean()
 df_scores_omi = df_scores_omi.drop(['electrode'],axis=1)
@@ -934,226 +944,380 @@ coordinates = coordinates.drop(coordinates[coordinates['electrode'] == 'E128'].i
 coordinates = coordinates.reset_index(drop=True)
 coordinates = coordinates.drop(['electrode'],axis=1)
 
-#save score topographies
-for ind, comp in enumerate(df_scores_omi):
-  circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
-  nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
-  plt.gca().add_patch(circle)
-  plt.gca().add_patch(nose)
-  plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_omi[comp], cmap='seismic',  levels=125, vmin=df_scores_omi_min, vmax=df_scores_omi_max)
-  plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  plt.gca().set_frame_on(False)
-  plt.gca().set_xticks([])
-  plt.gca().set_yticks([])
-  plt.colorbar()
-  plt.title(ind)
-  #plt.savefig("figures/FA_typique_scores_topo_" + str(ind) + ".png".format("PNG"))
-  plt.show() 
+##score topographies
+#for ind, comp in enumerate(df_scores):
+#  circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
+#  nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
+#  plt.gca().add_patch(circle)
+#  plt.gca().add_patch(nose)
+#  plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[comp], cmap='seismic',  levels=125, vmin=df_scores_min, vmax=df_scores_max)
+#  plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
+#  plt.gca().set_frame_on(False)
+#  plt.gca().set_xticks([])
+#  plt.gca().set_yticks([])
+#  plt.colorbar()
+#  plt.title(ind)
+#  #plt.savefig("figures/FA_ERP_typ_scores_topo_" + str(ind) + ".png".format("PNG"))
+#  plt.show() 
 
-########
-##plot score topographies and latencies to choose components
-#######
 
-for i in range(26):
+##plot and save score topographies and latencies to choose components
+def plot_scores_omi(loadings, scores):
   fig,ax = plt.subplots(2,1,figsize=(4, 6),gridspec_kw={'height_ratios': [1, 2]})
-  fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance_omi[i])+'%')
-  ax[0].plot(pos_loadings_omi[i])
-  ax[0].set_ylim([pos_loadings_omi.min().min()-0.5, pos_loadings_omi.max().max()+0.5])
+  fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance[i])+'%')
+  ax[0].plot(loadings)
+  ax[0].set_ylim([loadings.min().min()-0.5, loadings.max().max()+0.5])
   ax[0].set_xlabel("Time series (ms)")
   ax[0].set_xticks(ticks=range(0,999,99))
   ax[0].set_xticklabels(['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
-  ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_omi[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_omi_min, vmax=df_scores_omi_max)
+  ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, scores, cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
   ax[1].plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
   ax[1].set_axis_off()
   circle = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
   ax[1].add_patch(circle)
   ax[1].plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
   plt.tight_layout()
-  plt.savefig("figures/FA_typique_omi_comp_lat_topo_" + str(i) + ".png".format("PNG"))
+
+for i in range(len(components_omi)):
+  plot_scores_omi(pos_loadings_omi[i],df_scores_omi[i])
+  plt.savefig("figures/typical/ERPdata/FA_ERP_typ_comp_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+#my components are 15 for N140 and 11 for P300
+
+###############
+##Plot scores per condition and per age
+###############
+
+##Plot components latencies and topographies per condition
+
+df_scores_cond = df_factor_scores
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_cond['electrode'] = myelectrode #add to df scores
+mycond = df_ERPdata['condition']
+df_scores_cond['condition'] = mycond
+
+def scores_percond(df, cond):
+  df_cond = df[df['condition']==cond]
+  df_cond = df_cond.drop(['condition'],axis=1)
+  df_cond = df_cond.groupby(['electrode'], as_index=False).mean()
+  df_cond = df_cond.drop(['electrode'],axis=1)
+  return df_cond
+
+df_scores_std = scores_percond(df_scores_cond,7)
+df_scores_dev = scores_percond(df_scores_cond,2)
+df_scores_MMN = df_scores_dev - df_scores_std
+df_scores_fam = scores_percond(df_scores_cond,3)
+df_scores_con = scores_percond(df_scores_cond,1)
+df_scores_RS = df_scores_fam - df_scores_con
+
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_std[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_dev[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_MMN[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_fam[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_con[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
 
-my_components = [19,21,24,23]
+plt.close('all')
+for i in range(27):
+  plot_scores(pos_loadings[i],df_scores_RS[i])
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+plt.close('all')
 
-################
-##PER AGE
-################
+##plot components latencies and topographies per age
+
+df_scores_age = pd.DataFrame(factor_scores)
 
 #get topographies per age
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_age['electrode'] = myelectrode #add to df scores
 myage = df_ERPdata['age'] #get clean age
 df_scores_age['age'] = myage
 
-df_scores_two = df_scores_age[df_scores_age['age']==2]
-df_scores_two = df_scores_two.drop(['age'],axis=1)
-df_scores_two =df_scores_two.groupby(['electrode'], as_index=False).mean()
-df_scores_two = df_scores_two.drop(['electrode'],axis=1)
+def scores_perage(df, age):
+  df_age = df[df['age']==age]
+  df_age = df_age.drop(['age'],axis=1)
+  df_age = df_age.groupby(['electrode'], as_index=False).mean()
+  df_age = df_age.drop(['electrode'],axis=1)
+  return df_age
+
+df_scores_two = scores_perage(df_scores_age,2)
+df_scores_four = scores_perage(df_scores_age,4)
+df_scores_six = scores_perage(df_scores_age,6)
+
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_two[i])
+  plt.savefig("figures/typical/ERPdata/perage/comp_typ_two_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_four[i])
+  plt.savefig("figures/typical/ERPdata/perage/comp_typ_four_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_six[i])
+  plt.savefig("figures/typical/ERPdata/perage/comp_typ_six_lat_topo_" + str(i+1) + ".png".format("PNG"))
+
+##plot components latencies and topographies per age per condition
+
+df_scores_agecond = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_agecond['electrode'] = myelectrode #add to df scores
+myage = df_ERPdata['age'] #get clean age
+df_scores_agecond['age'] = myage
+mycond = df_ERPdata['condition']
+df_scores_agecond['condition'] = mycond
+
+def scores_peragecond(age,condition,factor_scores):
+  myage = factor_scores[factor_scores['age']==age]
+  mycond = myage[myage['condition']==condition]
+  myage_cond = mycond.groupby('electrode', as_index=False).mean()
+  myage_cond = myage_cond.drop(['electrode'],axis=1)
+  return myage_cond
+
+df_scores_two_fam = scores_peragecond(2,3,df_scores_agecond)
+df_scores_two_con = scores_peragecond(2,1,df_scores_agecond)
+df_scores_two_RS = df_scores_two_fam - df_scores_two_con
+df_scores_two_dev = scores_peragecond(2,2,df_scores_agecond)
+df_scores_two_std = scores_peragecond(2,7,df_scores_agecond)
+df_scores_two_MMN = df_scores_two_dev - df_scores_two_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_two_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_two_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_two_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+
+df_scores_four_fam = scores_peragecond(4,3,df_scores_agecond)
+df_scores_four_con = scores_peragecond(4,1,df_scores_agecond)
+df_scores_four_RS = df_scores_four_fam - df_scores_four_con
+df_scores_four_dev = scores_peragecond(4,2,df_scores_agecond)
+df_scores_four_std = scores_peragecond(4,7,df_scores_agecond)
+df_scores_four_MMN = df_scores_four_dev - df_scores_four_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_four_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_four_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_four_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+
+df_scores_six_fam = scores_peragecond(6,3,df_scores_agecond)
+df_scores_six_con = scores_peragecond(6,1,df_scores_agecond)
+df_scores_six_RS = df_scores_six_fam - df_scores_six_con
+df_scores_six_dev = scores_peragecond(6,2,df_scores_agecond)
+df_scores_six_std = scores_peragecond(6,7,df_scores_agecond)
+df_scores_six_MMN = df_scores_six_dev - df_scores_six_std
+
+for i in range(len(components)):
+  plot_scores(pos_loadings[i],df_scores_six_fam[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_con[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_RS[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_RS_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_dev[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_std[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+  plot_scores(pos_loadings[i],df_scores_six_MMN[i])
+  plt.savefig("figures/typical/ERPdata/perage/percond/comp_typ_six_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.close('all')
+
+######################
+##Tenth step : Extract data for statistics
+######################
+
+##All subjects analysis
+
+#define two topographies first
+somato = [36,41,42,46,47,51,52,53]
+frontal = [5, 6, 7, 12, 13, 106, 112,129]
+mycomponents = ([14,10]) #my components are 15 for N140 and 11 for P300
+
+df_scores_cond = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_cond['electrode'] = myelectrode #add to df scores
+mycond = df_ERPdata['condition']
+df_scores_cond['condition'] = mycond
+
+def scores2stat(condition,electrode,df_scores,component):
+  mydata = df_scores[df_scores['condition']==condition][df_scores['electrode'].isin(electrode)]
+  mycomp = mydata[component]
+  return mycomp
+
+scores_con_somato = scores2stat(1,somato,df_scores_cond,14)
+scores_dev_somato = scores2stat(2,somato,df_scores_cond,14)
+scores_fam_somato = scores2stat(3,somato,df_scores_cond,14)
+scores_std_somato = scores2stat(7,somato,df_scores_cond,14)
+
+scores_con_frontal = scores2stat(1,frontal,df_scores_cond,10)
+scores_dev_frontal = scores2stat(2,frontal,df_scores_cond,10)
+scores_fam_frontal = scores2stat(3,frontal,df_scores_cond,10)
+scores_std_frontal = scores2stat(7,frontal,df_scores_cond,10)
+
+
+##Compare components per age
+
+df_scores_age = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_age['electrode'] = myelectrode #add to df scores
+myage = df_ERPdata['age']
+df_scores_age['age'] = myage
+
+def comp_perage(df_scores,age,electrode,component):
+  mydata = df_scores[df_scores['age']==age][df_scores['electrode'].isin(electrode)]
+  mystat = mydata[component]
+  return mystat
+
+two_scores_comp14 = comp_perage(df_scores_age,2,somato,14)
+four_scores_comp14 = comp_perage(df_scores_age,4,somato,14)
+six_scores_comp14 = comp_perage(df_scores_age,6,somato,14)
+two_scores_comp10 = comp_perage(df_scores_age,2,somato,10)
+four_scores_comp10 = comp_perage(df_scores_age,4,somato,10)
+six_scores_comp10 = comp_perage(df_scores_age,6,somato,10)
+
+
+##Compare condition per age
+
+df_scores_age_cond = pd.DataFrame(factor_scores)
+
+myelectrode = df_ERPdata['electrode'] #get clean electrodes
+df_scores_age_cond['electrode'] = myelectrode #add to df scores
+mycond = df_ERPdata['condition']
+df_scores_age_cond['condition'] = mycond
+myage = df_ERPdata['age']
+df_scores_age_cond['age'] = myage
+
+def comp_perage_percond(df_scores,age,electrode,condition,component):
+  mydata = df_scores[df_scores['age']==age][df_scores['condition']==condition][df_scores['electrode'].isin(electrode)]
+  mystat = mydata[component].reset_index(drop=True)
+  return mystat
+
+
+scores_two_fam_somato = comp_perage_percond(df_scores_age_cond,2,somato,3,14)
+scores_two_con_somato = comp_perage_percond(df_scores_age_cond,2,somato,1,14)
+scores_two_RS_somato = scores_two_fam_somato - scores_two_con_somato
+scores_two_std_somato = comp_perage_percond(df_scores_age_cond,2,somato,7,14)
+scores_two_dev_somato = comp_perage_percond(df_scores_age_cond,2,somato,2,14)
+scores_two_MMN_somato = scores_two_dev_somato - scores_two_std_somato
+
+scores_two_fam_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,3,14)
+scores_two_con_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,1,14)
+scores_two_RS_frtl = scores_two_fam_frtl - scores_two_con_frtl
+scores_two_std_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,7,14)
+scores_two_dev_frtl = comp_perage_percond(df_scores_age_cond,2,frontal,2,14)
+scores_two_MMN_frtl = scores_two_dev_frtl - scores_two_std_frtl
+
+
+scores_four_fam_somato = comp_perage_percond(df_scores_age_cond,4,somato,3,14)
+scores_four_con_somato = comp_perage_percond(df_scores_age_cond,4,somato,1,14)
+scores_four_RS_somato = scores_four_fam_somato - scores_four_con_somato
+scores_four_std_somato = comp_perage_percond(df_scores_age_cond,4,somato,7,14)
+scores_four_dev_somato = comp_perage_percond(df_scores_age_cond,4,somato,2,14)
+scores_four_MMN_somato = scores_four_dev_somato - scores_four_std_somato
+
+scores_four_fam_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,3,14)
+scores_four_con_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,1,14)
+scores_four_RS_frtl = scores_four_fam_frtl - scores_four_con_frtl
+scores_four_std_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,7,14)
+scores_four_dev_frtl = comp_perage_percond(df_scores_age_cond,4,frontal,2,14)
+scores_four_MMN_frtl = scores_four_dev_frtl - scores_four_std_frtl
+
+
+scores_six_fam_somato = comp_perage_percond(df_scores_age_cond,6,somato,3,14)
+scores_six_con_somato = comp_perage_percond(df_scores_age_cond,6,somato,1,14)
+scores_six_RS_somato = scores_six_fam_somato - scores_six_con_somato
+scores_six_std_somato = comp_perage_percond(df_scores_age_cond,6,somato,7,14)
+scores_six_dev_somato = comp_perage_percond(df_scores_age_cond,6,somato,2,14)
+scores_six_MMN_somato = scores_six_dev_somato - scores_six_std_somato
+
+scores_six_fam_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,3,14)
+scores_six_con_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,1,14)
+scores_six_RS_frtl = scores_six_fam_frtl - scores_six_con_frtl
+scores_six_std_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,7,14)
+scores_six_dev_frtl = comp_perage_percond(df_scores_age_cond,6,frontal,2,14)
+scores_six_MMN_frtl = scores_six_dev_frtl - scores_six_std_frtl
+
+
+
+
+######################
+##Tenth step : Statistics
+######################
+
+tests = [(scores_fam_somato, scores_con_somato),(scores_fam_frontal, scores_con_frontal), (scores_dev_somato, scores_std_somato),(scores_dev_frontal, scores_std_frontal),(two_scores_comp14,four_scores_comp14),(two_scores_comp14,six_scores_comp14),(four_scores_comp14,six_scores_comp14),(two_scores_comp10,four_scores_comp10),(two_scores_comp10,six_scores_comp10),(four_scores_comp10,six_scores_comp10),(scores_two_fam_somato, scores_two_con_somato), (scores_two_fam_frtl, scores_two_con_frtl), (scores_two_dev_somato, scores_two_std_somato), (scores_two_dev_frtl, scores_two_std_frtl), (scores_four_fam_somato, scores_four_con_somato), (scores_four_fam_frtl, scores_four_con_frtl), (scores_four_dev_somato, scores_four_std_somato), (scores_four_dev_frtl, scores_four_std_frtl), (scores_six_fam_somato, scores_six_con_somato), (scores_six_fam_frtl, scores_six_con_frtl), (scores_six_dev_somato, scores_six_std_somato), (scores_six_dev_frtl, scores_six_std_frtl), (scores_two_RS_somato, scores_four_RS_somato), (scores_two_RS_somato, scores_six_RS_somato), (scores_four_RS_somato, scores_six_RS_somato), (scores_two_RS_frtl, scores_four_RS_frtl), (scores_two_RS_frtl, scores_six_RS_frtl), (scores_four_RS_frtl, scores_six_RS_frtl), (scores_two_MMN_somato, scores_four_MMN_somato), (scores_two_MMN_somato, scores_six_MMN_somato), (scores_four_MMN_somato, scores_six_MMN_somato), (scores_two_MMN_frtl, scores_four_MMN_frtl), (scores_two_MMN_frtl, scores_six_MMN_frtl), (scores_four_MMN_frtl, scores_six_MMN_frtl)]
+n_tests = len(tests)
+
+df_p_value = pd.DataFrame(columns=['p_values'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','twofour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300','foursix_P300', 'two_RS_somato', 'two_RS_frtl', 'two_MMN_somato', 'two_MMN_frtl', 'four_RS_somato', 'four_RS_frtl', 'four_MMN_somato', 'four_MMN_frtl', 'six_RS_somato', 'six_RS_frtl',  'six_MMN_somato', 'six_MMN_frtl', 'twofour_RS_somato', 'twosix_RS_somato', 'foursix_RS_somato', 'twofour_RS_frtl', 'twosix_RS_frtl', 'foursix_RS_frtl', 'twofour_MMN_somato', 'twosix_MMN_somato', 'foursix_MMN_somato', 'twofour_MMN_frtl', 'twosix_MMN_frtl', 'foursix_MMN_frtl'])
+p_values = []
+for ind, samples in enumerate(tests):
+  sample1 = samples[0]
+  sample2 = samples[1]
+  stat, p = stats.wilcoxon(sample1, sample2)
+  df_p_value.iloc[ind] = p
+  p_values.append(p)
+
+p_values = np.array(p_values)
+
+significant, corrected_p_values, _, _ = multipletests(p_values, method='fdr_bh')
+
+df_p_value['significant'] = significant
+df_p_value['corrected'] = corrected_p_values
 
-df_scores_four = df_scores_age[df_scores_age['age']==4]
-df_scores_four = df_scores_four.drop(['age'],axis=1)
-df_scores_four =df_scores_four.groupby(['electrode'], as_index=False).mean()
-df_scores_four = df_scores_four.drop(['electrode'],axis=1)
 
-df_scores_six = df_scores_age[df_scores_age['age']==6]
-df_scores_six = df_scores_six.drop(['age'],axis=1)
-df_scores_six =df_scores_six.groupby(['electrode'], as_index=False).mean()
-df_scores_six = df_scores_six.drop(['electrode'],axis=1)
-
-
-for i in range(27): #to do in a for loop !!!!
-  fig,ax = plt.subplots(figsize=(12, 6))
-  grid = plt.GridSpec(3, 3, wspace =0.3, hspace = 0.3)
-  ax0 = plt.subplot(grid[0, 0:2])
-  ax1 = plt.subplot(grid[1:, 0])
-  ax2 = plt.subplot(grid[1:, 1])
-  ax3 = plt.subplot(grid[1:, 2])
-  fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance[i])+'%')
-  ax0.plot(pos_loadings[i])
-  ax0.set_ylim([pos_loadings.min().min()-0.5, pos_loadings.max().max()+0.5])
-  ax0.set_xlabel("Time series (ms)")
-  ax0.set_xticks(ticks=range(0,999,99))
-  ax0.set_xticklabels(['-100','0','100','200','300','400','500','600','700','800','900'])
-  ax1.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_two[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax2.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_four[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax3.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_six[i], cmap='seismic', levels=125, alpha=0.9, vmin=df_scores_min, vmax=df_scores_max)
-  ax1.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax2.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax3.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=7)
-  ax1.set_axis_off()
-  ax2.set_axis_off()
-  ax3.set_axis_off()
-  circle1 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle2 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  circle3 = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
-  ax1.add_patch(circle1)
-  ax2.add_patch(circle2)
-  ax3.add_patch(circle3)
-  ax1.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax2.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax3.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
-  ax1.text(-1,-3.5,'two years old')
-  ax2.text(-1,-3.5,'four years old')
-  ax3.text(-1,-3.5,'six years old')
-  plt.tight_layout()
-  plt.savefig("figures/FA_typique_per_age_lat_topo_" + str(i) + ".png".format("PNG"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# arrange data per condition and electrodes
-
-control_somato = df_ERPdata[df_ERPdata['condition']==1][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-deviant_somato = df_ERPdata[df_ERPdata['condition']==2][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-familiarization_somato = df_ERPdata[df_ERPdata['condition']==3][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-postom_somato = df_ERPdata[df_ERPdata['condition']==5][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-standard_somato = df_ERPdata[df_ERPdata['condition']==6][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-stimmoy_somato = df_ERPdata[df_ERPdata['condition']==7][df_ERPdata['electrode'].isin([28,29,35,36,41,42,47,52])][df_ERPdata.columns[0:1000]]
-
-control_frontal = df_ERPdata[df_ERPdata['condition']==1][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-deviant_frontal = df_ERPdata[df_ERPdata['condition']==2][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-familiarization_frontal = df_ERPdata[df_ERPdata['condition']==3][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-postom_frontal = df_ERPdata[df_ERPdata['condition']==5][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-standard_frontal = df_ERPdata[df_ERPdata['condition']==6][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-stimmoy_frontal = df_ERPdata[df_ERPdata['condition']==7][df_ERPdata['electrode'].isin([5, 6, 7, 12, 13, 106, 112,129])][df_ERPdata.columns[0:1000]]
-
-##############
-##Twelfth step : Statistics
-##############
-
-# perfom t-test
-
-from scipy import stats
-
-#statistics for all components at one
-
-control_somato_stat = factor_scores[control_somato.index]
-deviant_somato_stat = factor_scores[deviant_somato.index]
-familiarization_somato_stat = factor_scores[familiarization_somato.index]
-postom_somato_stat = factor_scores[postom_somato.index]
-standard_somato_stat = factor_scores[standard_somato.index]
-stimmoy_somato_stat = factor_scores[stimmoy_somato.index]
-
-control_frontal_stat = factor_scores[control_frontal.index]
-deviant_frontal_stat = factor_scores[deviant_frontal.index]
-familiarization_frontal_stat = factor_scores[familiarization_frontal.index]
-postom_frontal_stat = factor_scores[postom_frontal.index]
-standard_frontal_stat = factor_scores[standard_frontal.index]
-stimmoy_frontal_stat = factor_scores[stimmoy_frontal.index]
-
-
-for comp in list(range(0,27)):
-  var1 = familiarization_frontal_stat[:, comp]
-  var2 = control_frontal_stat[:, comp]
-  print(stats.ttest_rel(var1, var2))
-
-
-
-#perform non parametric hypothesis testing
-
-
-myfactor_scores = factor_scores[:,my_components]
-
-control_somato_stat = myfactor_scores[control_somato.index]
-deviant_somato_stat = myfactor_scores[deviant_somato.index]
-familiarization_somato_stat = myfactor_scores[familiarization_somato.index]
-postom_somato_stat = myfactor_scores[postom_somato.index]
-standard_somato_stat = myfactor_scores[standard_somato.index]
-stimmoy_somato_stat = myfactor_scores[stimmoy_somato.index]
-
-control_frontal_stat = myfactor_scores[control_frontal.index]
-deviant_frontal_stat = myfactor_scores[deviant_frontal.index]
-familiarization_frontal_stat = myfactor_scores[familiarization_frontal.index]
-postom_frontal_stat = myfactor_scores[postom_frontal.index]
-standard_frontal_stat = myfactor_scores[standard_frontal.index]
-stimmoy_frontal_stat = myfactor_scores[stimmoy_frontal.index]
-
-
-
-mean_std_somato_comp19 = np.mean(standard_somato_stat[:,0])
-
-from scipy.stats import bootstrap
-stats.bootstrap(mean_std_somato_comp19, np.std,n_resamples=10)
-
-
-
-
-
-
-
-
-
-datab = (mean_std_somato_comp19)  # samples must be in a sequence
-res = bootstrap(datab, np.std, confidence_level=0.9,
-
-                random_state=rng)
-
-fig, ax = plt.subplots()
-ax.hist(res.bootstrap_distribution, bins=25)
-ax.set_title('Bootstrap Distribution')
-ax.set_xlabel('statistic value')
-ax.set_ylabel('frequency')
-plt.show()
