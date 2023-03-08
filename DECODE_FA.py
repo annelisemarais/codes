@@ -8,12 +8,12 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import FactorAnalysis
 from scipy import stats
-from statsmodels import stats
-from sklearn.utils import resample
+from statsmodels.stats.multitest import multipletests
+import random
 
 # load typical matlab file 
 data = loadmat('data/typical/Typical_PCA.mat')['Typical_PCA'] # 27090*1000
-df_data = pd.DataFrame(data)
+df_rawdata = pd.DataFrame(data)
 
 ##############
 ## First step : construct pandas dataframe with label of each row 
@@ -45,22 +45,39 @@ for j in range(nb_subjects):
 electrode = list(range(1, 130)) * nb_subjects *7
 
 
-df_data['condition'] = condition
-df_data['electrode'] = electrode
-df_data['sub'] = sub
-df_data['age'] = age
+df_rawdata['condition'] = condition
+df_rawdata['electrode'] = electrode
+df_rawdata['sub'] = sub
+df_rawdata['age'] = age
 
-df_data #check data
+df_rawdata #check data
 
 
 ########
-###Resolve class imbalance by upsampling six years old
+###Resolve class imbalance  by upsampling six years old
 ########
+df_data =df_rawdata.drop(df_rawdata[df_rawdata['age']==6].index)
 
-six_yo = df_data[df_data['age']==6]
-six_yo = six_yo.drop(['sub'], axis=1)
-six_yo_resample = resample(six_yo, replace=True,n_samples=len(six_yo)*2,stratify=six_yo)
-six_yo_sort = six_yo_resample.sort_values(by=['condition']).sort_values(by=['electrode'])
+#Random upsampling of subjects
+
+mylist = list(range(25,31))
+random.seed(1)
+upsample = random.choices(mylist,k=12)
+#output = [25, 30, 29, 26, 27, 27, 28, 29, 25, 25, 30, 27]
+
+sixyo_resampled = pd.DataFrame(columns=df_rawdata.columns)
+for sub in upsample:
+  sixyo_resampled = pd.concat([sixyo_resampled,df_rawdata[df_rawdata['sub']==sub]])
+  
+#change subject number
+sub = []
+for i in range(25,37): 
+    new_sub = [i] * 129* 7 #129 EEG channels and 7 conditions
+    sub += new_sub
+
+sixyo_resampled['sub']=sub
+
+df_data = df_data.append(sixyo_resampled)
 
 ##############
 ##Second step : Remove bad channels and eye channels
@@ -124,20 +141,24 @@ ERPdata = ERPdata.to_numpy()
 ##########
 
 familiarization = df_ERPdata[df_ERPdata['condition']==3]
+familiarization = familiarization.drop(['condition', 'sub','age'], axis=1)
 familiarization =familiarization.groupby('electrode', as_index=False).mean()
-familiarization = familiarization.drop(['condition', 'sub','electrode','age'], axis=1)
+familiarization = familiarization.drop(['electrode'], axis=1)
 
 deviant = df_ERPdata[df_ERPdata['condition']==2]
+deviant = deviant.drop(['condition', 'sub','age'], axis=1)
 deviant =deviant.groupby('electrode', as_index=False).mean()
-deviant = deviant.drop(['condition', 'sub','electrode','age'], axis=1)
+deviant = deviant.drop(['electrode'], axis=1)
 
 postom = df_ERPdata[df_ERPdata['condition']==5]
+postom = postom.drop(['condition', 'sub','age'], axis=1)
 postom =postom.groupby('electrode', as_index=False).mean()
-postom = postom.drop(['condition', 'sub','electrode','age'], axis=1)
+postom = postom.drop(['electrode'], axis=1)
 
 standard = df_ERPdata[df_ERPdata['condition']==7]
+standard = standard.drop(['condition', 'sub','age'], axis=1)
 standard =standard.groupby('electrode', as_index=False).mean()
-standard = standard.drop(['condition', 'sub','electrode','age'], axis=1)
+standard = standard.drop(['electrode'], axis=1)
 
 plt.plot(np.mean(deviant.iloc[[4,5,6,11,12,105,111,124]][:]))
 plt.plot(np.mean(standard.iloc[[4,5,6,11,12,105,111,124]][:]))
@@ -260,7 +281,7 @@ for ind, comp in enumerate(pos_loadings):
 
 sorted_max = dict(sorted(loadings_max.items(), key=lambda item: item[1]))
 df_max = pd.DataFrame(data=sorted_max, index=[0]).T
-df_max.to_excel('data/typical/df_ERP_max_loadings.xlsx')
+df_max.to_excel('data/typical/ERPdata/df_ERP_max_loadings.xlsx')
 
 ##############
 ## Seventh step : build factor scores and get components' scores topographies
@@ -329,9 +350,11 @@ for i in range(len(components)):
   plot_scores(pos_loadings[i],df_scores[i])
   plt.savefig("figures/typical/ERPdata/FA_ERP_typ_comp_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
-#my components are 20 for N140, 26 for P200 and 24 for P300
+#my components are 15 for N140 and 11 for P300
 
-
+###############
+##Plot scores per condition and per age
+###############
 
 ##Plot components latencies and topographies per condition
 
@@ -356,75 +379,41 @@ df_scores_fam = scores_percond(df_scores_cond,3)
 df_scores_con = scores_percond(df_scores_cond,1)
 df_scores_pom = scores_percond(df_scores_cond,5)
 
-
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_std[i])
-  plt.savefig("figures/typique/percond/FA_typique_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_std_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_dev[i])
-  plt.savefig("figures/typique/percond/FA_typique_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_dev_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_MMN[i])
-  plt.savefig("figures/typique/percond/FA_typique_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_MMN_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_fam[i])
-  plt.savefig("figures/typique/percond/FA_typique_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_fam_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_con[i])
-  plt.savefig("figures/typique/percond/FA_typique_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_con_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
 
+plt.close('all')
 for i in range(27):
   plot_scores(pos_loadings[i],df_scores_pom[i])
-  plt.savefig("figures/typique/percond/FA_typique_pom_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/ERPdata/percond/FA_typ_pom_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
-######################
-##Tenth step : Statistics
-######################
+plt.close('all')
 
+##plot components latencies and topographies per age
 
-#define two topographies first
-somato = [36,41,42,46,47,51,52,53]
-frontal = [5, 6, 7, 12, 13, 106, 112,129]
-mycomponents = ([19,23,25]) #my components are 20 for N140, 26 for P200 and 24 for P300
-
-def scores2stat(df,condition,electrode,factor_scores):
-  mystat = df[df['condition']==condition][df['electrode'].isin(electrode)][df.columns[0:1000]]
-  mystat = factor_scores[mystat.index]
-  mystat = mystat.T
-  mystat = mystat[mycomponents]
-  return mystat
-
-control_somato = scores2stat(df_ERPdata,1,somato,factor_scores)
-deviant_somato = scores2stat(df_ERPdata,2,somato,factor_scores)
-familiarization_somato = scores2stat(df_ERPdata,3,somato,factor_scores)
-standard_somato = scores2stat(df_ERPdata,7,somato,factor_scores)
-
-control_frontal = scores2stat(df_ERPdata,1,frontal,factor_scores)
-deviant_frontal = scores2stat(df_ERPdata,2,frontal,factor_scores)
-familiarization_frontal = scores2stat(df_ERPdata,3,frontal,factor_scores)
-standard_frontal = scores2stat(df_ERPdata,7,frontal,factor_scores)
-
-
-tests = [(familiarization_somato[0], control_somato[0]),(familiarization_somato[2], control_somato[2]), (familiarization_frontal[1], control_frontal[1]), (deviant_somato[0], standard_somato[0]), (deviant_somato[2], standard_somato[2]), (deviant_frontal[1], standard_frontal[1])]
-n_tests = len(tests)
-
-p_values = []
-for sample1, sample2 in tests:
-    stat, p_value = stats.wilcoxon(sample1, sample2)
-    p_values.append(p_value)
-
-p_values = np.array(p_values)
-significant, corrected_p_values, _, _ = stats.multitest.multipletests(p_values, method='holm')
-
-
-##############
-##Divide components scores per age
-##############
 df_scores_age = pd.DataFrame(factor_scores)
 
 #get topographies per age
@@ -458,17 +447,106 @@ for i in range(len(components)):
   plt.savefig("figures/typical/ERPdata/perage/comp_typ_six_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
 
-#########
+
+######################
+##Tenth step : Extract data for statistics
+######################
+
+
+##All subjects analysis
+
+#define two topographies first
+somato = [36,41,42,46,47,51,52,53]
+frontal = [5, 6, 7, 12, 13, 106, 112,129]
+mycomponents = ([14,10]) #my components are 15 for N140 and 11 for P300
+
+def scores2stat(df,condition,electrode,factor_scores,component):
+  mystat = df[df['condition']==condition][df['electrode'].isin(electrode)][df.columns[0:1000]].index
+  mystat = factor_scores[mystat]
+  mystat = mystat.T
+  mystat = mystat[component]
+  return mystat
+
+control_somato = scores2stat(df_ERPdata,1,somato,factor_scores,14)
+deviant_somato = scores2stat(df_ERPdata,2,somato,factor_scores,14)
+familiarization_somato = scores2stat(df_ERPdata,3,somato,factor_scores,14)
+standard_somato = scores2stat(df_ERPdata,7,somato,factor_scores,14)
+
+control_frontal = scores2stat(df_ERPdata,1,frontal,factor_scores,10)
+deviant_frontal = scores2stat(df_ERPdata,2,frontal,factor_scores,10)
+familiarization_frontal = scores2stat(df_ERPdata,3,frontal,factor_scores,10)
+standard_frontal = scores2stat(df_ERPdata,7,frontal,factor_scores,10)
+
+
 ##Compare components per age
-#########
 
 df_scores_age = pd.DataFrame(factor_scores)
 
-def comp_perage(df,age,electrode,comp_N140,comp_P300):
+def comp_perage(df,age,electrode,mycomponents):
   myindex = df[df['age']==age][df['electrode'].isin(electrode)][df.columns[0:1000]].index
-  mystat = factor_scores.iloc[mystat]
+  mystat = df_scores_age.iloc[myindex]
   mystat = mystat[mycomponents]
   return mystat
+
+
+two_scores_mycomp = comp_perage(df_ERPdata,2,somato,mycomponents)
+four_scores_mycomp = comp_perage(df_ERPdata,4,somato,mycomponents)
+six_scores_mycomp = comp_perage(df_ERPdata,6,somato,mycomponents)
+
+
+##Compare condition per age
+
+
+
+
+
+
+
+
+
+
+######################
+##Tenth step : Statistics
+######################
+
+tests = [(familiarization_somato, control_somato),(familiarization_frontal, control_frontal), (deviant_somato, standard_somato),(deviant_frontal, standard_frontal),(two_scores_mycomp[14],four_scores_mycomp[14]),(two_scores_mycomp[14],six_scores_mycomp[14]),(four_scores_mycomp[14],six_scores_mycomp[14]),(two_scores_mycomp[10],four_scores_mycomp[10]),(two_scores_mycomp[10],six_scores_mycomp[10]),(four_scores_mycomp[10],six_scores_mycomp[10])]
+n_tests = len(tests)
+
+df_p_value = pd.DataFrame(columns=['p_values'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','twofour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300','foursix_P300'])
+p_values = []
+for ind, samples in enumerate(tests):
+  sample1 = samples[0]
+  sample2 = samples[1]
+  stat, p = stats.wilcoxon(sample1, sample2)
+  df_p_value.iloc[ind] = p
+  p_values.append(p)
+
+p_values = np.array(p_values)
+
+significant, corrected_p_values, _, _ = multipletests(p_values, method='holm')
+
+df_p_value['significant'] = significant
+df_p_value['corrected'] = corrected_p_values
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
