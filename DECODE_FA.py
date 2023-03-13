@@ -260,7 +260,7 @@ def plot_ts(loadings):
   for ind, comp in enumerate(loadings):
     plt.plot(range(0, 1000), comp, linewidth=3)
   plt.xlabel("Time series (ms)")
-  plt.ylabel("Components loading")
+  plt.ylabel("Component loadings")
   plt.xlim(0,999)
   plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
   plt.savefig("figures/typical/FA_loadings_ERP_typ.png")
@@ -790,7 +790,7 @@ def plot_ts_omi(loadings):
   for ind, comp in enumerate(loadings):
     plt.plot(range(0, 1000), comp, linewidth=3)
   plt.xlabel("Time series (ms)")
-  plt.ylabel("Loadings")
+  plt.ylabel("Component loadings")
   plt.xticks(ticks=range(0,999,99), labels =['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
   plt.savefig("figures/typical/omission/FA_loadings_omi_typ.png")
 
@@ -958,33 +958,68 @@ def plot_ts_finale(loadings):
   for ind, comp in enumerate(loadings):
     if ind == 14:
       plt.plot(range(0, 1000), comp, linewidth=3,color='r')
-    elif ind == 10:
+    elif ind == 25:
       plt.plot(range(0, 1000), comp, linewidth=3,color='b')
     else:
       plt.plot(range(0, 1000), comp, linewidth=1,color='k')
   plt.xlabel("Time series (ms)")
-  plt.ylabel("Loadings")
+  plt.ylabel("Component loadings")
   plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
   plt.savefig("figures/typical/FA_loadings_ERP_typ_finale.png")
 
 plot_ts_finale(pos_loadings)
 plt.show()
 
-mycoor = [4,5,6,11,12,35,40,41,45,46,50,51,52,105,111,124]
+mycoorsomato = [36,41,42,46,47,51,52,53]
 
 ##score topographies for my components
-for ind, comp in enumerate(mycomponents):
-  circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
-  nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
-  plt.gca().add_patch(circle)
-  plt.gca().add_patch(nose)
-  plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[comp], cmap='seismic',  levels=125, vmin=-1, vmax=1)
-  plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=4)
-  for coor in mycoor:
-    plt.plot(coordinates.x_coor.loc[coor],coordinates.y_coor.loc[coor], 'k.', markersize=9)
-  plt.gca().set_frame_on(False)
-  plt.gca().set_xticks([])
-  plt.gca().set_yticks([])
-  plt.colorbar()
-  #plt.savefig("figures/typical/FA_scores_ERP_typ_finale.png")
-  plt.show() 
+fig,ax = plt.subplots(figsize=(4, 4))
+circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
+nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
+plt.gca().add_patch(circle)
+plt.gca().add_patch(nose)
+plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[14], cmap='seismic',  levels=125, vmin=-1, vmax=1)
+plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=4)
+for coor in mycoorsomato:
+  plt.plot(coordinates.x_coor.loc[coor],coordinates.y_coor.loc[coor], 'k.', markersize=9)
+plt.gca().set_frame_on(False)
+plt.gca().set_xticks([])
+plt.gca().set_yticks([])
+plt.savefig("figures/typical/ERPdata/FA_ERP_typ_N140_finale.png")
+plt.show() 
+
+mycoorfrtl = [5,6,7,12,13,106,112,129]
+
+##score topographies for my components
+fig,ax = plt.subplots(figsize=(4, 4))
+circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
+nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
+plt.gca().add_patch(circle)
+plt.gca().add_patch(nose)
+plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores[25], cmap='seismic',  levels=125, vmin=-1, vmax=1)
+plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=4)
+for coor in mycoorfrtl:
+  plt.plot(coordinates.x_coor.loc[coor],coordinates.y_coor.loc[coor], 'k.', markersize=9)
+plt.gca().set_frame_on(False)
+plt.gca().set_xticks([])
+plt.gca().set_yticks([])
+plt.savefig("figures/typical/ERPdata/FA_ERP_typ_P300_finale.png")
+plt.show() 
+
+mycoorsomato = [36,41,42,46,47,51,52,53]
+
+##score topographies for my components
+fig,ax = plt.subplots(figsize=(4, 4))
+circle = plt.Circle((0, 0.05), coordinates.y_coor.max()-0.05, color='k', fill=False, linewidth=2)
+nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
+plt.gca().add_patch(circle)
+plt.gca().add_patch(nose)
+plt.tricontourf(coordinates.x_coor,coordinates.y_coor, df_scores_omi[1], cmap='seismic',  levels=125, vmin=-1, vmax=1)
+plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=4)
+for coor in mycoorsomato:
+  plt.plot(coordinates.x_coor.loc[coor],coordinates.y_coor.loc[coor], 'k.', markersize=9)
+plt.gca().set_frame_on(False)
+plt.gca().set_xticks([])
+plt.gca().set_yticks([])
+plt.savefig("figures/typical/omission/FA_omi_typ_finale.png")
+plt.show() 
