@@ -212,6 +212,7 @@ components_variance = np.round(np.array(components_variance),decimals=2)
 cum_variance = np.cumsum(components_variance)
 list_components = list(range(1,n_components+1))
 
+plt.close('all')
 plt.scatter(list_components, cum_variance, color='k')
 plt.axhline(y=99, c='r')
 plt.yticks(list(range(50,110,10)))
@@ -341,8 +342,9 @@ def plot_scores(loadings, scores):
   fig,ax = plt.subplots(2,1,figsize=(4, 6),gridspec_kw={'height_ratios': [1, 2]})
   fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance[i])+'%')
   ax[0].plot(loadings)
-  ax[0].set_ylim([loadings.min().min()-0.5, loadings.max().max()+0.5])
+  ax[0].set_ylim([-3, 9])
   ax[0].set_xlabel("Time series (ms)")
+  ax[0].set_xlim(0,999)
   ax[0].set_xticks(ticks=range(0,999,99))
   ax[0].set_xticklabels(['-100','0','100','200','300','400','500','600','700','800','900'])
   ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, scores, cmap='seismic', levels=125, alpha=0.9, vmin=-1, vmax=1)
@@ -632,9 +634,9 @@ def comp_perage(df_scores,age,electrode,component):
 two_scores_comp14 = comp_perage(df_scores_age,2,somato,14)
 four_scores_comp14 = comp_perage(df_scores_age,4,somato,14)
 six_scores_comp14 = comp_perage(df_scores_age,6,somato,14)
-two_scores_comp10 = comp_perage(df_scores_age,2,somato,25)
-four_scores_comp10 = comp_perage(df_scores_age,4,somato,25)
-six_scores_comp10 = comp_perage(df_scores_age,6,somato,25)
+two_scores_comp25 = comp_perage(df_scores_age,2,somato,25)
+four_scores_comp25 = comp_perage(df_scores_age,4,somato,25)
+six_scores_comp25 = comp_perage(df_scores_age,6,somato,25)
 
 
 ##Compare condition per age
@@ -745,9 +747,9 @@ list_components_omi = list(range(1,n_components_omi+1))
 plt.scatter(list_components_omi, cum_variance_omi, color='k')
 plt.axhline(y=99, c='r')
 plt.yticks(list(range(50,110,10)))
-plt.xlabel("Components omission")
+plt.xlabel("Components")
 plt.ylabel("Explained variance (%)")
-plt.title("Explained variance per component")
+plt.title("Explained variance per component for omission")
 plt.savefig("figures/typical/omission/Typ_omi_screeplot.png")
 plt.show()
 
@@ -790,6 +792,8 @@ def plot_ts_omi(loadings):
   for ind, comp in enumerate(loadings):
     plt.plot(range(0, 1000), comp, linewidth=3)
   plt.xlabel("Time series (ms)")
+  plt.xlim(0,999)
+  plt.ylim([-3,9])
   plt.ylabel("Component loadings")
   plt.xticks(ticks=range(0,999,99), labels =['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
   plt.savefig("figures/typical/omission/FA_loadings_omi_typ.png")
@@ -838,8 +842,9 @@ def plot_scores_omi(loadings, scores):
   fig,ax = plt.subplots(2,1,figsize=(4, 6),gridspec_kw={'height_ratios': [1, 2]})
   fig.suptitle('Component '+str(i+1)+ ', explained variance = '+str(components_variance_omi[i])+'%')
   ax[0].plot(loadings)
-  ax[0].set_ylim([loadings.min().min()-0.5, loadings.max().max()+0.5])
+  ax[0].set_ylim([-3, 9])
   ax[0].set_xlabel("Time series (ms)")
+  ax[0].set_xlim(0,999)
   ax[0].set_xticks(ticks=range(0,999,99))
   ax[0].set_xticklabels(['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
   ax[1].tricontourf(coordinates.x_coor,coordinates.y_coor, scores, cmap='seismic', levels=125, alpha=0.9, vmin=-1, vmax=1)
@@ -854,7 +859,7 @@ def plot_scores_omi(loadings, scores):
 
 for i in range(len(components_omi)):
   plot_scores_omi(pos_loadings_omi[i],df_scores_omi[i])
-  plt.savefig("figures/typical/omission/FA_omi_typ_comp_lat_topo_" + str(i+1) + ".png".format("PNG"))
+  plt.savefig("figures/typical/FA_omi_typ_comp_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
 #my components are 15 for N140 and 11 for P300
 
@@ -929,16 +934,16 @@ six_scores_omi = comp_perage(df_scores_omi_age,6,somato,1)
 ##Tenth step : Statistics
 ######################
 
-tests = [(scores_fam_somato, scores_con_somato),(scores_fam_frontal, scores_con_frontal), (scores_dev_somato, scores_std_somato),(scores_dev_frontal, scores_std_frontal),(scores_pom_somato, scores_std_somato),(scores_pom_frontal, scores_std_frontal),(two_scores_comp14,four_scores_comp14),(two_scores_comp14,six_scores_comp14),(four_scores_comp14,six_scores_comp14),(two_scores_comp10,four_scores_comp10),(two_scores_comp10,six_scores_comp10),(four_scores_comp10,six_scores_comp10),(scores_two_fam_somato, scores_two_con_somato), (scores_two_fam_frtl, scores_two_con_frtl), (scores_two_dev_somato, scores_two_std_somato), (scores_two_dev_frtl, scores_two_std_frtl),(scores_two_pom_somato, scores_two_std_somato), (scores_two_pom_frtl, scores_two_std_frtl), (scores_four_fam_somato, scores_four_con_somato), (scores_four_fam_frtl, scores_four_con_frtl), (scores_four_dev_somato, scores_four_std_somato), (scores_four_dev_frtl, scores_four_std_frtl),(scores_four_pom_somato, scores_four_std_somato), (scores_four_pom_frtl, scores_four_std_frtl), (scores_six_fam_somato, scores_six_con_somato), (scores_six_fam_frtl, scores_six_con_frtl), (scores_six_dev_somato, scores_six_std_somato), (scores_six_dev_frtl, scores_six_std_frtl),(scores_six_pom_somato, scores_six_std_somato), (scores_six_pom_frtl, scores_six_std_frtl), (scores_two_RS_somato, scores_four_RS_somato), (scores_two_RS_somato, scores_six_RS_somato), (scores_four_RS_somato, scores_six_RS_somato), (scores_two_RS_frtl, scores_four_RS_frtl), (scores_two_RS_frtl, scores_six_RS_frtl), (scores_four_RS_frtl, scores_six_RS_frtl), (scores_two_MMN_somato, scores_four_MMN_somato), (scores_two_MMN_somato, scores_six_MMN_somato), (scores_four_MMN_somato, scores_six_MMN_somato), (scores_two_MMN_frtl, scores_four_MMN_frtl), (scores_two_MMN_frtl, scores_six_MMN_frtl), (scores_four_MMN_frtl, scores_six_MMN_frtl), (scores_two_MMNpom_somato, scores_four_MMNpom_somato), (scores_two_MMNpom_somato, scores_six_MMNpom_somato), (scores_four_MMNpom_somato, scores_six_MMNpom_somato), (scores_two_MMNpom_frtl, scores_four_MMNpom_frtl), (scores_two_MMNpom_frtl, scores_six_MMNpom_frtl), (scores_four_MMNpom_frtl, scores_six_MMNpom_frtl), (two_scores_omi, four_scores_omi),(two_scores_omi,six_scores_omi),(four_scores_omi, six_scores_omi)]
+tests = [(scores_fam_somato, scores_con_somato),(scores_fam_frontal, scores_con_frontal), (scores_dev_somato, scores_std_somato),(scores_dev_frontal, scores_std_frontal),(scores_pom_somato, scores_std_somato),(scores_pom_frontal, scores_std_frontal),(two_scores_comp14,four_scores_comp14),(two_scores_comp14,six_scores_comp14),(four_scores_comp14,six_scores_comp14),(two_scores_comp25,four_scores_comp25),(two_scores_comp25,six_scores_comp25),(four_scores_comp25,six_scores_comp25),(scores_two_fam_somato, scores_two_con_somato), (scores_two_fam_frtl, scores_two_con_frtl), (scores_two_dev_somato, scores_two_std_somato), (scores_two_dev_frtl, scores_two_std_frtl),(scores_two_pom_somato, scores_two_std_somato), (scores_two_pom_frtl, scores_two_std_frtl), (scores_four_fam_somato, scores_four_con_somato), (scores_four_fam_frtl, scores_four_con_frtl), (scores_four_dev_somato, scores_four_std_somato), (scores_four_dev_frtl, scores_four_std_frtl),(scores_four_pom_somato, scores_four_std_somato), (scores_four_pom_frtl, scores_four_std_frtl), (scores_six_fam_somato, scores_six_con_somato), (scores_six_fam_frtl, scores_six_con_frtl), (scores_six_dev_somato, scores_six_std_somato), (scores_six_dev_frtl, scores_six_std_frtl),(scores_six_pom_somato, scores_six_std_somato), (scores_six_pom_frtl, scores_six_std_frtl), (scores_two_RS_somato, scores_four_RS_somato), (scores_two_RS_somato, scores_six_RS_somato), (scores_four_RS_somato, scores_six_RS_somato), (scores_two_RS_frtl, scores_four_RS_frtl), (scores_two_RS_frtl, scores_six_RS_frtl), (scores_four_RS_frtl, scores_six_RS_frtl), (scores_two_MMN_somato, scores_four_MMN_somato), (scores_two_MMN_somato, scores_six_MMN_somato), (scores_four_MMN_somato, scores_six_MMN_somato), (scores_two_MMN_frtl, scores_four_MMN_frtl), (scores_two_MMN_frtl, scores_six_MMN_frtl), (scores_four_MMN_frtl, scores_six_MMN_frtl), (scores_two_MMNpom_somato, scores_four_MMNpom_somato), (scores_two_MMNpom_somato, scores_six_MMNpom_somato), (scores_four_MMNpom_somato, scores_six_MMNpom_somato), (scores_two_MMNpom_frtl, scores_four_MMNpom_frtl), (scores_two_MMNpom_frtl, scores_six_MMNpom_frtl), (scores_four_MMNpom_frtl, scores_six_MMNpom_frtl), (two_scores_omi, four_scores_omi),(two_scores_omi,six_scores_omi),(four_scores_omi, six_scores_omi)]
 n_tests = len(tests)
 
-df_p_value = pd.DataFrame(columns=['p_values'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','MMNpom_somato','MMNpom_frtl','towfour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300', 'foursix_P300', 'two_RS_somato', 'two_RS_frtl', 'two_MMN_somato', 'two_MMN_frtl','two_MMNpom_somato', 'two_MMNpom_frtl', 'four_RS_somato', 'four_RS_frtl', 'four_MMN_somato', 'four_MMN_frtl','four_MMNpom_somato', 'four_MMNpom_frtl', 'six_RS_somato', 'six_RS_frtl', 'six_MMN_somato', 'six_MMN_frtl','six_MMNpom_somato', 'six_MMNpom_frtl', 'twofour_RS_somato', 'twosix_RS_somato', 'foursix_RS_somato', 'twofour_RS_frtl', 'twosix_RS_frtl', 'foursix_RS_frtl', 'twofour_MMN_somato', 'twosix_MMN_somato', 'foursix_MMN_somato', 'twofour_MMN_frtl', 'twosix_MMN_frtl', 'foursix_MMN_frtl','twofour_MMNpom_somato', 'twosix_MMNpom_somato', 'foursix_MMNpom_somato', 'twofour_MMNpom_frtl', 'twosix_MMNpom_frtl', 'foursix_MMNpom_frtl', 'twofour_omi','twosix_omi','foursix_omi'])
+df_p_value = pd.DataFrame(columns=['p_values', 'statistics'], index=['RS_somato','RS_frtl','MMN_somato','MMN_frtl','MMNpom_somato','MMNpom_frtl','towfour_N140','twosix_N140','foursix_N140','twofour_P300','twosix_P300', 'foursix_P300', 'two_RS_somato', 'two_RS_frtl', 'two_MMN_somato', 'two_MMN_frtl','two_MMNpom_somato', 'two_MMNpom_frtl', 'four_RS_somato', 'four_RS_frtl', 'four_MMN_somato', 'four_MMN_frtl','four_MMNpom_somato', 'four_MMNpom_frtl', 'six_RS_somato', 'six_RS_frtl', 'six_MMN_somato', 'six_MMN_frtl','six_MMNpom_somato', 'six_MMNpom_frtl', 'twofour_RS_somato', 'twosix_RS_somato', 'foursix_RS_somato', 'twofour_RS_frtl', 'twosix_RS_frtl', 'foursix_RS_frtl', 'twofour_MMN_somato', 'twosix_MMN_somato', 'foursix_MMN_somato', 'twofour_MMN_frtl', 'twosix_MMN_frtl', 'foursix_MMN_frtl','twofour_MMNpom_somato', 'twosix_MMNpom_somato', 'foursix_MMNpom_somato', 'twofour_MMNpom_frtl', 'twosix_MMNpom_frtl', 'foursix_MMNpom_frtl', 'twofour_omi','twosix_omi','foursix_omi'])
 p_values = []
 for ind, samples in enumerate(tests):
   sample1 = samples[0]
   sample2 = samples[1]
   stat, p = stats.wilcoxon(sample1, sample2)
-  df_p_value.iloc[ind] = p
+  df_p_value.iloc[ind] = p, stat
   p_values.append(p)
 
 p_values = np.array(p_values)
@@ -956,18 +961,32 @@ df_p_value['corrected'] = corrected_p_values
 def plot_ts_finale(loadings):
   plt.close('all')
   for ind, comp in enumerate(loadings):
-    if ind == 14:
-      plt.plot(range(0, 1000), comp, linewidth=3,color='r')
-    elif ind == 25:
-      plt.plot(range(0, 1000), comp, linewidth=3,color='b')
-    else:
-      plt.plot(range(0, 1000), comp, linewidth=1,color='k')
+    plt.plot(range(0, 1000), comp, linewidth=1,color='k')
+  plt.plot(range(0, 1000), loadings[14], linewidth=3,color='r')
+  plt.plot(range(0, 1000), loadings[25], linewidth=3,color='b')
   plt.xlabel("Time series (ms)")
   plt.ylabel("Component loadings")
+  plt.xlim(0,999)
+  plt.ylim([-3,9])
   plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
   plt.savefig("figures/typical/FA_loadings_ERP_typ_finale.png")
 
 plot_ts_finale(pos_loadings)
+plt.show()
+
+def plot_ts_omi_finale(loadings):
+  plt.close('all')
+  for ind, comp in enumerate(loadings):
+     plt.plot(range(0, 1000), comp, linewidth=1,color='k')
+  plt.plot(range(0, 1000), loadings[1], linewidth=3,color='g')
+  plt.xlabel("Time series (ms)")
+  plt.ylabel("Component loadings")
+  plt.xlim(0,999)
+  plt.ylim([-3,9])
+  plt.xticks(ticks=range(0,999,99), labels =['-500','-400','-300','-200','-100','0','100','200','300','400','500'])
+  plt.savefig("figures/typical/FA_loadings_omi_typ_finale.png")
+
+plot_ts_omi_finale(pos_loadings_omi)
 plt.show()
 
 mycoorsomato = [36,41,42,46,47,51,52,53]
@@ -1023,3 +1042,63 @@ plt.gca().set_xticks([])
 plt.gca().set_yticks([])
 plt.savefig("figures/typical/omission/FA_omi_typ_finale.png")
 plt.show() 
+
+
+def plot_loadings_finale(loadings):
+  fig,ax = plt.subplots(figsize=(7, 4))
+  plt.plot(loadings)
+  plt.ylim([-2, 3])
+  plt.xlabel("Time series (ms)")
+  plt.xlim(0,999)
+  plt.xticks(ticks=range(0,999,99))
+  plt.xticks(ticks=range(0,999,99), labels =['-100','0','100','200','300','400','500','600','700','800','900'])
+
+plot_loadings_finale(pos_loadings[14])
+plt.savefig("figures/typical/ERPdata/ERP_typ_loading_N140_finale.png")
+plot_loadings_finale(pos_loadings[25])
+plt.savefig("figures/typical/ERPdata/ERP_typ_loading_P300_finale.png")
+plot_loadings_finale(pos_loadings_omi[11])
+plt.savefig("figures/typical/omission/omi_typ_loading_N2_finale.png")
+plt.show()
+
+
+
+mycoorsomato = [36,41,42,46,47,51,52,53]
+mycoorfrtl = [5,6,7,12,13,106,112,129]
+##plot and save score topographies and latencies to choose components
+def plot_scores_finale(scores, coor):
+  fig,ax = plt.subplots(figsize=(4, 4))
+  plt.tricontourf(coordinates.x_coor,coordinates.y_coor, scores, cmap='seismic', levels=125, alpha=0.9, vmin=-1, vmax=1)
+  plt.plot(coordinates.x_coor,coordinates.y_coor, 'k.', markersize=4)
+  for coor in coor:
+    plt.plot(coordinates.x_coor.loc[coor],coordinates.y_coor.loc[coor], 'k.', markersize=9)
+  plt.gca().set_frame_on(False)
+  circle = plt.Circle((0, 0), coordinates.y_coor.max(), color='k', fill=False, linewidth=2)
+  nose = plt.Polygon([(-0.3,coordinates.y_coor.max()), (0,coordinates.y_coor.max()*1.1), (0.3,coordinates.y_coor.max())], color='k', fill=False, linewidth=2)
+  plt.gca().add_patch(circle)
+  plt.gca().add_patch(nose)
+  plt.plot([-0.3,0,0.3,-0.3], [coordinates.y_coor.max(),coordinates.y_coor.max()*1.1,coordinates.y_coor.max(),coordinates.y_coor.max()], color='k')
+  plt.gca().set_xticks([])
+  plt.gca().set_yticks([])
+  plt.tight_layout()
+
+plot_scores_finale(df_scores_two[14], mycoorsomato)
+plt.savefig("figures/typical/ERPdata/ERP_typ_two_N140_finale.png")
+plot_scores_finale(df_scores_two[26], mycoorfrtl)
+plt.savefig("figures/typical/ERPdata/ERP_typ_two_P300_finale.png")
+plot_scores_finale(df_scores_four[14], mycoorsomato)
+plt.savefig("figures/typical/ERPdata/ERP_typ_four_N140_finale.png")
+plot_scores_finale(df_scores_four[26], mycoorfrtl)
+plt.savefig("figures/typical/ERPdata/ERP_typ_four_P300_finale.png")
+plot_scores_finale(df_scores_six[14], mycoorsomato)
+plt.savefig("figures/typical/ERPdata/ERP_typ_six_N140_finale.png")
+plot_scores_finale(df_scores_six[26], mycoorfrtl)
+plt.savefig("figures/typical/ERPdata/ERP_typ_six_P300_finale.png")
+plot_scores_finale(df_scores_omi_two[1], mycoorsomato)
+plt.savefig("figures/typical/omission/omi_typ_two_N200_finale.png")
+plot_scores_finale(df_scores_omi_four[1], mycoorsomato)
+plt.savefig("figures/typical/omission/omi_typ_four_N200_finale.png")
+plot_scores_finale(df_scores_omi_six[1], mycoorsomato)
+plt.savefig("figures/typical/omission/omi_typ_six_N200_finale.png")
+plt.show()
+
