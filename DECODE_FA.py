@@ -16,6 +16,7 @@ from scipy import stats
 from statsmodels.stats.multitest import multipletests
 import random
 from matplotlib.patches import Rectangle
+import seaborn as sns
 
 # load typical matlab file 
 data = loadmat('data/typical/Typical_PCA.mat')['Typical_PCA'] # 27090*1000
@@ -899,10 +900,12 @@ df_max_omi.to_excel('data/typical/omission/df_omi_max_loadings.xlsx')
 
 factor_scores_omi = model_omi.fit_transform(data_omi) # n_obs * n_comp
 
+df_scores_omi = pd.DataFrame(factor_scores_omi)
+
 #save
 #df_factor_scores_omi.to_csv("data/typical/omission/df_omi_factor_scores_typical.csv")
 
-df_scores_omi = pd.DataFrame(factor_scores_omi)
+
 
 myelec_omi = df_omi['electrode'] #get clean electrodes
 df_scores_omi['electrode'] = myelec_omi #add to df scores
@@ -943,7 +946,7 @@ for i in range(len(components_omi)):
   plot_scores_omi(pos_loadings_omi[i],df_scores_omi[i])
   plt.savefig("figures/typical/FA_omi_typ_comp_lat_topo_" + str(i+1) + ".png".format("PNG"))
 
-#my components are 15 for N140 and 11 for P300
+
 
 ###############
 ##Plot scores per age
@@ -1328,3 +1331,155 @@ plt.savefig("figures/typical/ERPdata/ERP_typ_six_MMNpom_N140_finale.png")
 plot_scores_finale(df_scores_six_MMNpom[25], mycoorfrtl)
 plt.savefig("figures/typical/ERPdata/ERP_typ_six_MMNpom_P300_finale.png")
 plt.show()
+
+
+
+
+###############################
+# SNS BOXPLOTS
+###############################
+df_boxplot = pd.DataFrame(factor_scores)
+df_boxplot['electrode'] = myelec
+df_boxplot['condition'] = mycond
+df_boxplot['age'] = myage
+df_boxplot = df_boxplot[[14,25,'condition','electrode','age']]
+
+rs_somato = df_boxplot[(df_boxplot['condition'].isin([1,3])) & (df_boxplot['electrode'].isin(somato))]
+sp_somato = df_boxplot[(df_boxplot['condition'].isin([7,2,5])) & (df_boxplot['electrode'].isin(somato))]
+
+f, ax = plt.subplots(figsize=(3, 6))
+f.suptitle('Somatosensory RS')
+sns.boxplot(data=rs_somato, x='condition', y=14, orient="v", order=(3,1), palette={(0.44,0.68,0.28), (0.44,0.19,0.63)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Familiarization","Control"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_RS_somato.png")
+plt.show()
+
+f, ax = plt.subplots(figsize=(4, 6))
+f.suptitle('Somatosensory SP')
+sns.boxplot(data=sp_somato, x='condition', y=14, orient="v", order=(7,2,5), palette={"grey", (0.11,0.11,1), (1,0.5,0)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Standard","Deviant","Postomission"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_SP_somato.png")
+plt.show()
+
+rs_frtl = df_boxplot[(df_boxplot['condition'].isin([1,3])) & (df_boxplot['electrode'].isin(frontal))]
+sp_frtl = df_boxplot[(df_boxplot['condition'].isin([7,2,5])) & (df_boxplot['electrode'].isin(frontal))]
+
+f, ax = plt.subplots(figsize=(3, 6))
+f.suptitle('Frontal RS')
+sns.boxplot(data=rs_frtl, x='condition', y=25, orient="v", order=(3,1), palette={(0.44,0.68,0.28), (0.44,0.19,0.63)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Familiarization","Control"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_RS_frtl.png")
+plt.show()
+
+f, ax = plt.subplots(figsize=(4, 6))
+f.suptitle('Somatosensory SP')
+sns.boxplot(data=sp_frtl, x='condition', y=25, orient="v", order=(7,2,5), palette={"grey", (0.11,0.11,1), (1,0.5,0)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Standard","Deviant","Postomission"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_SP_frtl.png")
+plt.show()
+
+
+####BY AGE#####
+
+
+f, ax = plt.subplots(figsize=(6, 6))
+f.suptitle('Somatosensory RS by age')
+sns.boxplot(data=rs_somato, x='age', y=14, hue='condition', hue_order=(3,1), orient="v", palette={(0.44,0.68,0.28), (0.44,0.19,0.63)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Two years old","Four years old", "Six years old"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+handles, labels = ax.get_legend_handles_labels() 
+ax.legend(handles, ["Familiarization","Control"], title="Condition")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_RS_somato_age.png")
+plt.show()
+
+f, ax = plt.subplots(figsize=(8, 6))
+f.suptitle('Somatosensory SP by age')
+sns.boxplot(data=sp_somato, x='age', y=14, hue='condition', hue_order=(7,2,5), orient="v", palette={"grey", (0.11,0.11,1), (1,0.5,0)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Two years old","Four years old", "Six years old"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+handles, labels = ax.get_legend_handles_labels() 
+ax.legend(handles, ["Standard","Deviant","Postomission"], title="Condition")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_SP_somato_age.png")
+plt.show()
+
+
+f, ax = plt.subplots(figsize=(6, 6))
+f.suptitle('Frontal RS by age')
+sns.boxplot(data=rs_frtl, x='age', y=25, hue='condition', hue_order=(3,1), orient="v", palette={(0.44,0.68,0.28), (0.44,0.19,0.63)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Two years old","Four years old", "Six years old"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+handles, labels = ax.get_legend_handles_labels() 
+ax.legend(handles, ["Familiarization","Control"], title="Condition")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_RS_frtl_age.png")
+plt.show()
+
+f, ax = plt.subplots(figsize=(8, 6))
+f.suptitle('Frontal SP by age')
+sns.boxplot(data=sp_frtl, x='age', y=25, hue='condition', hue_order=(7,2,5), orient="v", palette={"grey", (0.11,0.11,1), (1,0.5,0)}, notch=True)
+ax.set_ylim(-4, 3)
+ax.set_xlabel('')
+ax.set_xticklabels(["Two years old","Four years old", "Six years old"])
+ax.invert_yaxis()
+ax.set_ylabel("factor scores")
+handles, labels = ax.get_legend_handles_labels() 
+ax.legend(handles, ["Standard","Deviant","Postomission"], title="Condition")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+plt.tight_layout()
+plt.savefig("figures/typical/boxplot/box_SP_frtl_age.png")
+plt.show()
+

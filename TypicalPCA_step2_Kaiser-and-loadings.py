@@ -2,8 +2,14 @@ __author__ = 'Anne-Lise Marais, see annelisemarais.github.io'
 __publication__ = 'Marais, AL., Anquetil, A., Dumont, V., Roche-Labarbe, N. (2023). Somatosensory prediction in typical children from 2 to 6 years old'
 __corresponding__ = 'nadege.roche@unicaen.fr'
 
+#cd Z:\Bureau\data_analysis
 
 ##############Kaiser model and loadings##############
+
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import FactorAnalysis
+import matplotlib.pyplot as plt
 
 ############
 ###Load data
@@ -24,9 +30,8 @@ ERPdata = ERPdata.to_numpy()
 df_omi = pd.read_csv('data/typical/omission/df_omi_typ.csv',index_col=0)
 
 #mean data by electrode for this single condition
-omission = df_omi.drop(['condition', 'sub','age'], axis=1)
-omission =omission.groupby('electrode', as_index=False).mean()
-omission = omission.drop(['electrode'], axis=1)
+data_omi = df_omi.drop(['condition', 'electrode','sub','age'], axis=1)
+data_omi = data_omi.to_numpy()
 
 ############
 ###Kaiser estimations
@@ -173,6 +178,10 @@ def plot_ERP_loadings(loadings):
 plot_ERP_loadings(pos_loadings)
 plt.show()
 
+#save
+df_pos_loadings = pd.DataFrame(pos_loadings)
+df_pos_loadings.to_csv("data/typical/ERPdata/df_ERP_typ_pos_loadings.csv")
+
 
 pos_loadings_omi = model_omi.components_
 for ind, comp in enumerate(pos_loadings_omi):
@@ -196,6 +205,10 @@ def plot_omi_loadings(loadings):
 
 plot_omi_loadings(pos_loadings_omi)
 plt.show()
+
+#save
+df_pos_loadings_omi = pd.DataFrame(pos_loadings_omi)
+df_pos_loadings_omi.to_csv("data/typical/omission/df_omi_typ_pos_loadings.csv")
 
 ############
 ###Get loadings max to determine their accending latencies
@@ -222,3 +235,25 @@ for ind, comp in enumerate(pos_loadings_omi):
 sorted_max_omi = dict(sorted(loadings_max_omi.items(), key=lambda item: item[1]))
 df_max_omi = pd.DataFrame(data=sorted_max_omi, index=[0]).T
 df_max_omi.to_excel('data/typical/omission/df_omi_max_loadings.xlsx')
+
+############
+###Compute factor scores
+############
+
+##Factor scores for all conditions except omission
+
+factor_scores = model.fit_transform(ERPdata) #time_series * n_comp
+
+df_scores = pd.DataFrame(factor_scores)
+
+#save
+df_scores.to_csv("data/typical/ERPdata/df_ERP_factor_scores_typical.csv")
+
+##Factor scores for omission only
+
+factor_scores_omi = model_omi.fit_transform(data_omi) # n_obs * n_comp
+
+df_scores_omi = pd.DataFrame(factor_scores_omi)
+
+#save
+df_scores_omi.to_csv("data/typical/omission/df_omi_factor_scores_typical.csv")
